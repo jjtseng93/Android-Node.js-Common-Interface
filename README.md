@@ -13,6 +13,7 @@ git clone https://github.com/jjtseng93/Android-Node.js-Common-Interface.git
 cd Android-Node.js-Common-Interface
 npm install
 ```
+## Running the APP for Web or Electron
 - Then, on Windows simply run the batch files named run_xxx.bat for different platforms
 - On other platforms' terminal
 ```
@@ -20,6 +21,13 @@ npm start          //  to start Electron
 npm run web        //  for packaging to Android's DroidScript or running in a browser
 ```
 - If you run web, open a browser and navigate to http://localhost:8081 by default
+## Running the APP for Android's DroidScript
+- You have to install DroidScript on Android first at https://play.google.com/store/apps/details?id=com.smartphoneremote.androidscriptfree
+- Run web first, and you'll see the packing tool in the command prompt
+- Use numbers to select which APP to pack
+- After packing, your APP will be ready under DroidScript/app_name
+  1. Copy it directly to /sdcard/DroidScript
+  2. or Zip the app_name folder to app_name.zip, and change the file extension to .spk, open it by the DroidScript APP on Android
 # File system structure
 ## Overview
 - For a comprehensive view, please look at the Project_Structure.pptx or the demo image below
