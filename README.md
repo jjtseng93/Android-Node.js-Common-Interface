@@ -1,5 +1,5 @@
 # Introduction
-- This framework is named Android/Node Common Interface, abbreviated ANCI
+- This framework is named Android/Node.js Common Interface, abbreviated ANCI
 - Targets to let program designers write a JavaScript APP once
 - And be able to use it on 
   + Android (under DroidScript framework)
@@ -8,6 +8,7 @@
 # File system structure
 ## Overview
 - For a comprehensive view, please look at the Project_Structure.pptx or the demo images
+- 
 ## sdcard (/sdcard)
 - Access by RELATIVE path in HTML files, but when using filesystem operations by anci.operations in JS files, use absolute path starting with /sdcard
 - As to emulate the environment of Android system
@@ -29,7 +30,7 @@
 - if the server was called w/o path, i.e http://xxx.xxx.x.x, default APP runs
   at http://xxx.xxx.x.x/sdcard/napps/0/main.app
 - the APPs' complete HTML comprises
-  + ~app_entry.html (/node-head.html)
+  + ~app_entry.html (/sdcard/napps/app_name/~app_entry.html)
   + xxx_api_anci.js (web_electron or droidscript)
   + query parameters (URL?para1=val_a&parameter2=val_b) as app.query
   + Code.js (/sdcard/napps/app_name/Code.js)
