@@ -1,0 +1,239 @@
+<script src="lib/vue.js"></script>
+
+
+<style>
+.w100{
+width:100%;
+}
+.h100{
+height:100%;
+}
+
+#th{
+background-color:#eeffee;
+display:block;
+width:100%;
+height: calc(90vh - 150px);
+z-index:10;
+
+}
+
+#storage_location_url{
+    background-color:green;
+    color:yellow;
+    font-size:20;
+    width:100%;
+}
+
+.instxt{
+background-color:black;
+color:white;
+width:47.5%;
+}
+.instxts{
+background-color:black;
+color:white;
+width:50px;
+font-size:45px;
+}
+
+select{
+height:50px;
+margin-top:10px;
+}
+
+.list-group-item:hover:not(.active){
+background-color:lightGray;
+}
+
+</style>
+
+<div id="rootdiv" style="position:relative;margin:5px;">
+
+
+<textarea id="filep" rows="2" style="vertical-align:top;width:calc(100% - 60px);">/sdcard/test.txt</textarea>
+
+<span onclick="anci.selectf([filep.value.substr(0,filep.value.lastIndexOf('/'))]).then(openf);"><i class="far fa-folder-open fa-3x"></i></span>
+
+<div>
+
+<span onclick="var s=th.value;s=s.split('\n').join('\r\n');anci.WriteFile(filep.value,s).then(alert);filep.style.color='black';"><i class="far fa-save fa-3x"></i></span>&nbsp;&nbsp;
+
+<span onclick="tundo()"><i class="fas fa-undo fa-2x"></i></span>&nbsp;
+<span onclick="tredo();"><i class="fas fa-redo fa-2x"></i></span>&nbsp;
+
+<span onclick="anci.SetClipboardText(th.value.substring(th.selectionStart,th.selectionEnd));"><i class="far fa-copy fa-2x"></i></span>&nbsp;
+<span onclick="var sstart=th.selectionStart;anci.SetClipboardText(th.value.substring(sstart,th.selectionEnd));th.value=th.value.substr(0,th.selectionStart)+th.value.substr(th.selectionEnd);saverudo();th.selectionStart=th.selectionEnd=sstart;th.focus();"><i class="fas fa-cut fa-2x"></i></span>&nbsp;
+<span onclick="(async ()=>{edtins(await anci.GetClipboardText());})()"><i class="far fa-clipboard fa-2x"></i></span>&nbsp;
+
+<span onclick="(async ()=>{ let test_path='/sdcard/~test.html'; await anci.wf(test_path,th.value); anci.openf(test_path)})()"><i class="fab fa-chrome fa-2x"></i></span>
+
+　
+
+<span onclick="runCode(ge('th'));"><i class="far fa-play-circle fa-2x"></i></span>
+
+</div>
+
+<textarea autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="th" onkeyup="var c=$(this).attr('data-count');if(c==null || isNaN(c)){c=0;}else{if(c>10){saverudo();c=0;}else{c++;}}$(this).attr('data-count',c);"><html>
+<head>
+<meta name="viewport" content="width=device-width" charset="utf8">
+<meta name="theme-color" content="#87CEEB">
+<title></title>
+</head>
+<body onload="">
+@@
+</body>
+</html></textarea>
+
+<br>
+
+<button onclick="th.value='';saverudo();">Clear</button>
+
+<button onclick="th.focus();th.selectionStart=0;th.selectionEnd=th.value.length;">Select all</button>
+
+<span onclick="pushnote();"><i class="far fa-sticky-note fa-3x"></i></span>&nbsp;&nbsp;
+
+<i class="fas fa-language fa-2x" @click="chi=!chi"></i>
+
+<br>
+
+
+
+
+<textarea id="gdq" style="display:none;">"</textarea>
+
+<br>
+
+<details class="m-2 bg-warning">
+<summary>{{chi?"顯示/隱藏符號表":"Toggle show/hide symbols"}}</summary>
+  <button class="instxts" v-for="s in symbolArray" :data-val="s" onclick="edtins($(this).data('val'));">{{s=="\t"?"\\t":s}}</button>
+</details>
+
+<hr>
+
+<button class="btn btn-info" onclick="findfunc();">{{chi?"尋找函式":"Find Functions"}}</button>
+<select id="selectfunc" onchange="jumpto(this.options[this.selectedIndex].value);this.selectedIndex=0;">
+<option>{{chi?"函式列表":"Function List"}}</option>
+</select>
+
+
+<button class="btn btn-info" onclick="findid();">{{chi?"尋找ID":"Find IDs"}}</button>
+<select id="selectid" onchange="jumpto(this.options[this.selectedIndex].value);this.selectedIndex=0;" class="instxt">
+<option>{{chi?"ID列表":"ID List"}}</option>
+</select>
+
+<select onchange="edtins(document.getElementById(this.options[this.selectedIndex].value).value);this.selectedIndex=0;">
+<option>{{chi?"插入HTML元素":"Insert HTML elements"}}</option>
+<option value="htmltxt">{{chi?"文字框":"Textarea"}}</option>
+<option value="htmlbtn">{{chi?"按鈕":"Button"}}</option>
+
+</select>
+
+<textarea id="htmltxt" style="display:none;">&lt;textarea id="" class="" onclick=""&gt;&lt;/textarea&gt;</textarea>
+<textarea id="htmlbtn" style="display:none;">&lt;button id="" class="" onclick=""&gt;&lt;/button&gt;</textarea>
+
+
+<details class="m-2 card bg-warning">
+  <summary>檔案系統File System</summary>
+  <ul class="list-group">
+    <li class="list-group-item" v-for="item in func_fs" 
+	  :data-value="get_func_ins(item)" 
+	  onclick="edtins($(this).data('value'));">
+	    {{get_func_help(item)}}
+	</li>
+  </ul>
+</details>
+
+<select onchange="edtins(this.options[this.selectedIndex].text);this.selectedIndex=0;" class="instxt">
+<option>輸入/輸出 Input/Output</option>
+<option>anci.SetClipboardText(&nbsp; );</option>
+<option>anci.GetClipboardText()</option>
+<option>anci.ShowPopup(&nbsp; );</option>
+<option>anci.ShowProgress( "載入中... Loading..." );</option>
+<option>anci.HideProgress();</option>
+<option>anci.CreateListDialog(&nbsp; ,&nbsp; ); </option>
+</select>
+
+<select onchange="edtins(this.options[this.selectedIndex].value);this.selectedIndex=0;" class="instxt">
+  <option>網路 Net</option>
+  <option v-for="item in func_net" :value="get_func_ins(item)">{{get_func_help(item)}}</option>
+</select>
+
+<select onchange="edtins(this.options[this.selectedIndex].text);this.selectedIndex=0;" class="instxt">
+<option>其他 Others</option>
+<option>=setTimeout(&nbsp; ,&nbsp; );</option>
+<option>clearTimeout(&nbsp; );</option>
+<option>=setInterval(&nbsp; ,&nbsp; );</option>
+<option>clearInterval(&nbsp; );</option>
+<option disabled=""></option>
+<option>anci.GetDisplayWidth()</option>
+<option>anci.GetDisplayHeight()</option>
+</select>
+
+<select onchange="edtins(this.options[this.selectedIndex].text);this.selectedIndex=0;" class="instxt">
+<option></option>
+<option></option>
+<option></option>
+<option></option>
+</select>
+
+<details class="m-2 card bg-warning">
+<summary>筆記檢視 Note viewing</summary>
+
+<span onclick="prevf();"><i class="fas fa-arrow-left fa-3x"></i></span>&nbsp;&nbsp;
+<span onclick="nextf();"><i class="fas fa-arrow-right fa-3x"></i></span>&nbsp;&nbsp;
+
+<br>
+
+<span onclick="prevf(-1,255);"><i class="fas fa-fast-backward fa-3x"></i></span>&nbsp;&nbsp;
+<span onclick="fileprev();"><i class="far fa-eye fa-3x"></i></span>&nbsp;&nbsp;
+<span onclick="prevf(1,0);"><i class="fas fa-fast-forward fa-3x"></i></span>&nbsp;&nbsp;
+
+</details>
+
+
+請輸入要取代掉的文字：<input type=text id="retext" value="@@">(以上為html編輯區)<br>
+
+控制項及排版
+<button onclick="ttoph(repobj.btn);">Button</button>
+
+<button onclick="ttoph(repobj.txt);">Text</button>
+<button onclick="ttoph(repobj.txta);">Textarea</button>
+<button onclick="ttoph(repobj.pass);">Password</button>
+<button onclick="ttoph(repobj.form);">Form</button>
+<button onclick="ttoph(repobj.a);">HyperLink</button>
+<button onclick="ttoph(repobj.img);">Picture</button>
+<button onclick="ttoph(repobj.media);">Media</button>
+<button onclick="ttoph(repobj.submit);">Submit</button>
+<button onclick="ttoph(repobj.reset);">Reset</button>
+<button onclick="ttoph(repobj.other);">Other Tag</button>
+<br>
+程式碼
+<button onclick="ttoph(repobj.script);">Script</button>
+<button onclick="ttoph(repobj.fn);">Function</button>
+<button onclick="ttoph(repobj.pfor);">For</button>
+<button onclick="ttoph(repobj.pif);">If</button>
+<button onclick="ttoph(repobj.pelse);">Else</button>
+<button onclick="ttoph(repobj.dw);">Doc write</button>
+<button onclick="ttoph(repobj.sto);">SetTimeout</button>
+<button onclick="ttoph(repobj.cto);">ClearTimeout</button>
+<button onclick="ttoph(repobj.pwhile);">While</button>
+<br>
+變數
+<button onclick="ttoph(repobj.ido);">Search String</button>
+<button onclick="ttoph(repobj.ssl);">SubString Length</button>
+<button onclick="ttoph(repobj.ssi);">SubString Index</button>
+
+
+
+
+
+
+<h2>AWCI Again!! 重出江湖</h2>
+Storage path:<br>
+
+<textarea id="storage_location_url" rows="2">local</textarea><br>
+
+<br><br><br><br><br><br>
+
+</div>

@@ -1,0 +1,170 @@
+<script src="lib/vue.js"></script>
+
+
+<style media="all">
+*{
+    -webkit-print-color-adjust: exact;
+}
+
+#jstest{
+    background-color:green;
+    color:yellow;
+    font-size:20;
+    width:99%;
+}
+
+#storage_location_url{
+    background-color:green;
+    color:yellow;
+    font-size:20;
+    width:100%;
+}
+
+button{margin:10px;}
+ 
+.list-group-item:hover:not(.active){
+background-color:lightGray;
+}
+
+</style>
+
+Testing code 測試程式碼<br>
+
+<!-- onkeyup attached in Code.js -->
+<textarea id="jstest" rows="15">
+(async ()=>{
+
+//Reading sentences
+//朗讀句子：
+  var s="I am very clever, 我很聰明";
+  anci.TextToSpeech(s,1,1);
+
+//List the functions of ANCI
+//列出ANCI的函式縮寫
+  await alert2(anci.getdoca());
+
+
+
+//  Read file
+//  讀取檔案
+//  await alert2(await anci.rf(await anci.getappp()+"/"+"~app_entry.html"))
+  
+//  Http Request with promise
+//  anci.xhr("https://google.com").then(alert2);
+
+/*
+
+Run the code inside this box using F2 or the symbol "~"
+在這個文字框按F2或是~都可以執行裏面的文字
+
+*/
+
+})()
+</textarea>
+
+<br><br>
+
+<span onclick="runCode();" oncontextmenu="alert('Run the text above as javascript')">
+  <i class="far fa-play-circle fa-3x"></i>
+</span>&nbsp;&nbsp;
+
+<span onclick="anci.selectf().then(r=>(window.r=r,anci.rf(r,'base64'))).then(r=>anci.bdlf(r,window.r.substr(window.r.lastIndexOf('/')+1)));"
+      oncontextmenu="alert('Download file from server')">
+  <i class="fas fa-download fa-3x"></i>
+</span>&nbsp;&nbsp;
+
+<span onclick="anci.bulf(false).then(alert2);" oncontextmenu="alert('Upload file to server')">
+  <i class="fas fa-upload fa-3x"></i>
+</span>&nbsp;&nbsp;
+
+<span onclick="anci.ChooseFile().then(anci.OpenFile);" oncontextmenu="alert('Open a file on the server')">
+  <i class="far fa-folder-open fa-3x"></i>
+</span>&nbsp;&nbsp;
+
+<br><br>
+
+<details open id="applistdiv" class="m-3 bg-warning card" v-if="platform_not_android">
+
+<summary>
+App Manager
+</summary>
+
+<div style="text-align:center;"
+  onclick="(async ()=>{gbcache.applist=await anci.ListFolder('/sdcard/napps');})()"
+  oncontextmenu="alert('Open APP (every folder under /sdcard/napps/ will be deemed as an APP)')">
+  <button class="btn btn-primary">
+    <i class="fas fa-sync"></i>
+    Load APP List...
+  </button>
+</div>
+
+<br>
+
+<span style="display:inline">
+
+<span onclick="newAPP();" oncontextmenu="alert('Add new APP')">
+  <i class="fas fa-plus fa-3x"></i>
+</span>&nbsp;&nbsp;
+
+<span onclick="anci.OpenFile('/sdcard/napps/'+gbcache.applist[gbcache.selectedApp-1]+'/UI.html');" oncontextmenu="alert('Edit APP interface')">
+  <i class="fab fa-windows fa-3x"></i>
+</span>&nbsp;&nbsp;
+
+<span onclick="anci.OpenFile('/sdcard/napps/'+gbcache.applist[gbcache.selectedApp-1]+'/Code.js');" oncontextmenu="alert('Edit APP JS code')">
+  <i class="fas fa-code fa-3x"></i>
+</span>&nbsp;&nbsp;
+
+<span onclick="runSelectedApp();" oncontextmenu="alert('Run the selected APP')">
+  <i class="far fa-play-circle fa-3x"></i>
+</span>&nbsp;&nbsp;
+
+</span>
+
+<br>
+
+<div>
+  <ul class="list-group" style="margin:10px;">
+    <li v-for="(item,index) in applist" :class="{'list-group-item':true,active:(selectedApp==(index+1))}"
+	    @click="selectedApp=(index+1)">
+	  {{index+1}}. {{item}}
+	</li>
+  </ul>
+</div>
+
+</details>
+
+<button class="btn btn-primary" onclick="testlist();">
+  Test the list dialog
+</button>
+
+<p id="demo">#demo &lt;p&gt; 我叫#demo歡迎控制我</p>
+
+<textarea
+  id="txt"
+  placeholder="我叫#txt歡迎控制我"
+  rows="4"></textarea>
+
+<h2 class="yellowgreen">
+  ANCI Again!! ANCI重出江湖
+</h2>
+
+Storage path:
+
+<br>
+
+<textarea
+  id="storage_location_url"
+  rows="2">local</textarea>
+
+<br>
+
+The "textbox" writing local is a marvelous function
+<br>
+Which enables you to target other servers for saving data
+<br>
+as the form http://xxx.xxx.x.x/storage_local
+<br>
+
+<div>Icons made by <a href="https://www.flaticon.com/authors/smashicons" title="Smashicons">Smashicons</a> from <a href="https://www.flaticon.com/"         title="Flaticon">www.flaticon.com</a></div>
+
+<br><br><br><br><br><br>
