@@ -5,10 +5,25 @@
   + Android (under DroidScript framework)
   + Node.js enabled device (running a server, the APP at the client side)
   + Windows/Linux/MacOS by utilizing Electron
+# Usage
+- You have to install Node.js first at https://nodejs.org/
+- You can use the git clone command or download the zip directly
+```
+git clone https://github.com/jjtseng93/Android-Node.js-Common-Interface.git
+cd Android-Node.js-Common-Interface
+npm install
+```
+- Then, on Windows simply run the batch files named run_xxx.bat for different platforms
+- On other platforms' terminal
+```
+npm start          //  to start Electron
+npm run web        //  for packaging to Android's DroidScript or running in a browser
+```
+- If you run web, open a browser and navigate to http://localhost:8081 by default
 # File system structure
 ## Overview
-- For a comprehensive view, please look at the Project_Structure.pptx or the demo images
-- 
+- For a comprehensive view, please look at the Project_Structure.pptx or the demo image below
+![image](https://jjtseng93.github.io/Android-Node.js-Common-Interface/Project_Structure.jpg)
 ## sdcard (/sdcard)
 - Access by RELATIVE path in HTML files, but when using filesystem operations by anci.operations in JS files, use absolute path starting with /sdcard
 - As to emulate the environment of Android system
