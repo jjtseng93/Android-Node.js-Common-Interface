@@ -31,6 +31,7 @@ npm run web        //  for packaging to Android's DroidScript or running in a br
 # File system structure
 ## Overview
 - For a comprehensive view, please look at the Project_Structure.pptx or the demo image below
+- My design targets to let you only focus on the 2 files: UI.html and Code.js for User Interface and Functionality
 ![image](https://jjtseng93.github.io/Android-Node.js-Common-Interface/Project_Structure.jpg)
 ## sdcard (/sdcard)
 - Access by RELATIVE path in HTML files, but when using filesystem operations by anci.operations in JS files, use absolute path starting with /sdcard
