@@ -4,7 +4,7 @@ Use HTML+CSS+JavaScript to design cross-platform APPs!
 - Aim: Write your program ONLY ONCE by HTML+CSS+JavaScript, 
 - And be able to run it as
   + Android APP by DroidScript framework
-  + Web APP by Node.js server
+  + Web APP by Node.js+Express server
   + Windows/Linux/MacOS Desktop APP by Electron
 # Usage
 - Install Node.js first at https://nodejs.org/
@@ -23,7 +23,7 @@ npm install
 # To start as Electron APP
 npm start
 
-# To start as Node.js server or Packaging to Android's DroidScript 
+# To start as Node.js+Express server or Packaging to Android's DroidScript 
 npm run web
 ```
 - If you run web, open a browser and navigate to http://localhost:8081 to run the Web APP by default
