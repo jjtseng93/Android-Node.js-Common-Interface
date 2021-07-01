@@ -8,9 +8,14 @@
     "web": "node web_electron_server_anci.js"
   },
   "keywords": [
-    "Electron"
+    "Electron","DroidScript","Node.js","Express"
   ],
   "author": "醫者小智(Dr. John)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jjtseng93/Android-Node.js-Common-Interface.git"
+  },
   "devDependencies": {
     "electron": "^13.1.2"
   },
