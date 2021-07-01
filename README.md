@@ -10,6 +10,7 @@ Use HTML+CSS+JavaScript to design cross-platform APPs!
 - Install Node.js first at https://nodejs.org/
   * Android users can install Termux and run pkg install nodejs or git
   * Then after git clone and cd, use npm install --no-bin-links to install dependencies
+  * if you want to store this package under /sdcard, you have to run termux-setup-storage first
 - Use git clone command or download the zip of this repo directly, and under the ANCI path run npm install
 ```
 git clone https://github.com/jjtseng93/Android-Node.js-Common-Interface.git
