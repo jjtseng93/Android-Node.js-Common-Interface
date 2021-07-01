@@ -1,13 +1,16 @@
+Use HTML+CSS+JavaScript to design cross-platform APPs!
 # Introduction
 - This framework is named Android/Node.js Common Interface, abbreviated ANCI
-- Targets to let program designers write a JavaScript APP once
-- And be able to use it on 
-  + Android (under DroidScript framework)
-  + Node.js enabled device (running a server, the APP at the client side)
-  + Windows/Linux/MacOS by utilizing Electron
+- Aim: Write your program ONLY ONCE by HTML+CSS+JavaScript, 
+- And be able to run it as
+  + Android APP by DroidScript framework
+  + Web APP by Node.js server
+  + Windows/Linux/MacOS Desktop APP by Electron
 # Usage
-- You have to install Node.js first at https://nodejs.org/
-- You can use the git clone command or download the zip directly
+- Install Node.js first at https://nodejs.org/
+  * Android users can install Dory - nodej.s and follow its instructions on Google Play to update to higher versions of Node.js
+  * It also comes with the git clone function
+- Use git clone command or download the zip of this repo directly, and under the ANCI path run npm install
 ```
 git clone https://github.com/jjtseng93/Android-Node.js-Common-Interface.git
 cd Android-Node.js-Common-Interface
@@ -17,10 +20,13 @@ npm install
 - Then, on Windows simply run the batch files named run_xxx.bat for different platforms
 - On other platforms' terminal
 ```
-npm start          //  to start Electron
-npm run web        //  for packaging to Android's DroidScript or running in a browser
+# To start as Electron APP
+npm start
+
+# To start as Node.js server or Packaging to Android's DroidScript 
+npm run web
 ```
-- If you run web, open a browser and navigate to http://localhost:8081 by default
+- If you run web, open a browser and navigate to http://localhost:8081 to run the Web APP by default
 ## Running the APP for Android's DroidScript
 - You have to install DroidScript on Android first at https://play.google.com/store/apps/details?id=com.smartphoneremote.androidscriptfree
 - Run web first, and you'll see the packing tool in the command prompt
