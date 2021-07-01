@@ -1,13 +1,17 @@
+Use HTML+CSS+JavaScript to design cross-platform APPs!
 # Introduction
 - This framework is named Android/Node.js Common Interface, abbreviated ANCI
-- Targets to let program designers write a JavaScript APP once
-- And be able to use it on 
-  + Android (under DroidScript framework)
-  + Node.js enabled device (running a server, the APP at the client side)
-  + Windows/Linux/MacOS by utilizing Electron
+- Aim: Write your program ONLY ONCE by HTML+CSS+JavaScript, 
+- And be able to run it as
+  + Android APP by DroidScript framework
+  + Web APP by Node.js+Express server
+  + Windows/Linux/MacOS Desktop APP by Electron
 # Usage
-- You have to install Node.js first at https://nodejs.org/
-- You can use the git clone command or download the zip directly
+- Install Node.js first at https://nodejs.org/
+  * Android users can install Termux and run pkg install nodejs or git
+  * Then after git clone and cd, use npm install --no-bin-links to install dependencies
+  * if you want to store this package under /sdcard, you have to run termux-setup-storage first
+- Use git clone command or download the zip of this repo directly, and under the ANCI path run npm install
 ```
 git clone https://github.com/jjtseng93/Android-Node.js-Common-Interface.git
 cd Android-Node.js-Common-Interface
@@ -17,10 +21,13 @@ npm install
 - Then, on Windows simply run the batch files named run_xxx.bat for different platforms
 - On other platforms' terminal
 ```
-npm start          //  to start Electron
-npm run web        //  for packaging to Android's DroidScript or running in a browser
+# To start as Electron APP
+npm start
+
+# To start as Node.js+Express server or Packaging to Android's DroidScript 
+npm run web
 ```
-- If you run web, open a browser and navigate to http://localhost:8081 by default
+- If you run web, open a browser and navigate to http://localhost:8081 to run the Web APP by default
 ## Running the APP for Android's DroidScript
 - You have to install DroidScript on Android first at https://play.google.com/store/apps/details?id=com.smartphoneremote.androidscriptfree
 - Run web first, and you'll see the packing tool in the command prompt
@@ -36,7 +43,7 @@ npm run web        //  for packaging to Android's DroidScript or running in a br
 ## sdcard (/sdcard)
 - Access by RELATIVE path in HTML files, but when using filesystem operations by anci.operations in JS files, use absolute path starting with /sdcard
 - As to emulate the environment of Android system
-- The uppermost folder that the cient side can access to protect server's code
+- The uppermost folder that the client side can access to protect server's code
 + napps folder: abbreviation of Node.js APPs, where your APPs are stored
   * /sdcard/napps/app_name on Node.js
   * the corresponding folder on Android is /sdcard/DroidScript/app_name
@@ -56,6 +63,6 @@ npm run web        //  for packaging to Android's DroidScript or running in a br
 - the APPs' complete HTML comprises
   + ~app_entry.html (/sdcard/napps/app_name/~app_entry.html)
   + xxx_api_anci.js (web_electron or droidscript)
-  + query parameters (URL?para1=val_a&parameter2=val_b) as app.query
+  + query parameters (URL?para1=val_a&parameter2=val_b) as anci.query
   + Code.js (/sdcard/napps/app_name/Code.js)
   + UI.html (/sdcard/napps/app_name/UI.html)
