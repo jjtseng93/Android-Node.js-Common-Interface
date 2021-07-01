@@ -8,8 +8,8 @@ Use HTML+CSS+JavaScript to design cross-platform APPs!
   + Windows/Linux/MacOS Desktop APP by Electron
 # Usage
 - Install Node.js first at https://nodejs.org/
-  * Android users can install Dory - nodej.s and follow its instructions on Google Play to update to higher versions of Node.js
-  * It also comes with the git clone function
+  * Android users can install Termux and run pkg install nodejs or git
+  * Then after git clone and cd, use npm install --no-bin-links to install dependencies
 - Use git clone command or download the zip of this repo directly, and under the ANCI path run npm install
 ```
 git clone https://github.com/jjtseng93/Android-Node.js-Common-Interface.git
