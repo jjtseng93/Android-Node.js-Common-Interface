@@ -42,7 +42,7 @@ npm run web
 ## sdcard (/sdcard)
 - Access by RELATIVE path in HTML files, but when using filesystem operations by anci.operations in JS files, use absolute path starting with /sdcard
 - As to emulate the environment of Android system
-- The uppermost folder that the cient side can access to protect server's code
+- The uppermost folder that the client side can access to protect server's code
 + napps folder: abbreviation of Node.js APPs, where your APPs are stored
   * /sdcard/napps/app_name on Node.js
   * the corresponding folder on Android is /sdcard/DroidScript/app_name
@@ -62,6 +62,6 @@ npm run web
 - the APPs' complete HTML comprises
   + ~app_entry.html (/sdcard/napps/app_name/~app_entry.html)
   + xxx_api_anci.js (web_electron or droidscript)
-  + query parameters (URL?para1=val_a&parameter2=val_b) as app.query
+  + query parameters (URL?para1=val_a&parameter2=val_b) as anci.query
   + Code.js (/sdcard/napps/app_name/Code.js)
   + UI.html (/sdcard/napps/app_name/UI.html)
