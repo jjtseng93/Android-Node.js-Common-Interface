@@ -14,7 +14,7 @@ function OnSetup()
    anci.DroidOrientation="Default";    // Orientation for Android DroidScript APP, Available values: Default,Portrait,Landscape,ReversePortrait,ReverseLandscape, or use 0~4
 }  //  OnSetup End
 
-function OnLoad()
+async function OnLoad()
 {
 
 gbcache=
@@ -31,8 +31,11 @@ gbcache=
     data:gbcache,	
   });
 
-Vue.nextTick(function()
-{
+await new Promise(resolve=>{
+Vue.nextTick(resolve);
+});
+
+
   $("#jstest")[0].onkeyup=function(e)
     {
       //alert(e.keyCode);
@@ -49,7 +52,8 @@ Vue.nextTick(function()
           }
 		}
     };
-});
+
+gbcache.applist=await anci.ListFolder('/sdcard/napps');
 
 }
 
@@ -82,7 +86,6 @@ alert(f);
 async function newAPP()
 {
   let tn=await anci.CreateListDialog("Select a template",await anci.ListFolder("/sdcard/napps"));
-  
     {
       let appName=await prompt("Enter a name for your new app");
       if(!appName) return;
