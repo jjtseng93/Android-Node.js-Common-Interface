@@ -6,7 +6,7 @@
 
 window.platform = window.platform || "web";
 
-anci={};
+anci={alert2_resolves:{},showlist_resolves:{}};
 
 $(OnStart);
 
@@ -749,6 +749,8 @@ alert2=async (msg,textAsHtml)=>{
   
   msg+="";
   
+  var uniqueID=anci.rndtime();
+  
   
   var dlg=$(`<div>
 </div>
@@ -765,21 +767,21 @@ alert2=async (msg,textAsHtml)=>{
           .css("font-size","20px")
           .css("padding","10px")
           .css("overflow","auto")
-          .attr("onclick","$(this).remove();anci.alert2_resolve();");
+          .attr("onclick",`$(this).remove();anci.alert2_resolves[${uniqueID}]();delete anci.alert2_resolves[${uniqueID}];`);
 		  
   if(textAsHtml)
     dlg.html(msg);
   else
     dlg[0].innerText=(msg);
 
-  dlg.append(`<div class="text-center"><button onclick="anci.alert2_resolve($(this).parent().parent().find('textarea').val());">OK</button></div>`);
+  dlg.append(`<div class="text-center"><button onclick="anci.alert2_resolves[${uniqueID}]($(this).parent().parent().find('textarea').val());">OK</button></div>`);
   
   $("body").append(dlg);
   
   dlg.find("button").last().focus();
   
   return await new Promise(resolve=>{
-	  anci.alert2_resolve=resolve;
+	  anci.alert2_resolves[uniqueID]=resolve;
   });
   
 };
@@ -806,20 +808,22 @@ anci.showlist=async (title_optional,list,listAsHtml)=>{
     }
 
   if(!list) list=["無項目 No Items"];
+  
+  var uniqueID=anci.rndtime();
 
   return (await new Promise(resolve=>{
 
-  anci.showlist_resolve=resolve;
+  anci.showlist_resolves[uniqueID]=resolve;
 
   alert2(`<h3 class="alert alert-success text-center">
 ${title_optional}</h3>
 \n`+
   `<ul class="list-group">\n`+
   `
-<li class="list-group-item list-group-item-danger text-center">取消Cancel</li>
+<li class="list-group-item list-group-item-danger text-center" onclick="anci.showlist_resolves[${uniqueID}]('');delete anci.showlist_resolves[${uniqueID}];">取消Cancel</li>
 `+
   list.map((i,ind)=>(`
-<li class="list-group-item list-group-item-info" onclick="var res=new String(anci.b64d('${anci.b64e(i)}'));res.index=${ind};anci.showlist_resolve(res);">${listAsHtml?i:anci.ttoh(i)}</li>
+<li class="list-group-item list-group-item-info" onclick="var res=new String(anci.b64d('${anci.b64e(i)}'));res.index=${ind};anci.showlist_resolves[${uniqueID}](res);delete anci.showlist_resolves[${uniqueID}];">${listAsHtml?i:anci.ttoh(i)}</li>
 `)).join("\n")+
   `</ul>
 `,true);
@@ -1011,7 +1015,16 @@ anci.WaitForValue=async (obj,key,value,milliSeconds)=>{
 
 anci.waitv=anci.WaitForValue;
 
-function Timer(action_function,interval_msec)
+anci.RandomTimestamp=()=>
+{
+  var min=101,max=999
+  rnd=Math.floor(Math.random() * (max - min) + min)
+  return rnd+""+Date.now();
+}
+
+anci.rndtime=anci.RandomTimestamp;
+
+anci.Timer=function(action_function,interval_msec)
 {
     this.action=action_function;
     this.interval=interval_msec;
