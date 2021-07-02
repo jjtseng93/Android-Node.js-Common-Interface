@@ -237,9 +237,9 @@ function pack_to_droidscript()
 	  complement_appentry("sdcard/napps/"+files[reply]+"/",files[reply])
 	  
 	  csl("\x1b[36m%s\x1b[0m","\r\nCopying /sdcard/napps/APP folder to /DroidScript...\r\n")
-	  console.log(await CopyFolder(global.joinp("sdcard/napps/"+files[reply]),global.joinp("DroidScript")));
+	  console.log(await CopyFolder(global.joinp("sdcard/napps/"+files[reply]),global.joinp("DroidScript"),true));
 	  csl("\x1b[36m%s\x1b[0m","\r\nCopying /sdcard/nlib folder to /DroidScript/APP...\r\n")
-	  console.log(await CopyFolder(global.joinp("sdcard/nlib"),global.joinp("DroidScript/"+files[reply])));
+	  console.log(await CopyFolder(global.joinp("sdcard/nlib"),global.joinp("DroidScript/"+files[reply]),true));
 	  csl("\x1b[36m%s\x1b[0m","\r\nCopying droidscript_main.js to "+"DroidScript/"+files[reply]+"/"+files[reply]+".js...\r\n");
 	  console.log( CopyFile(global.joinp("droidscript_main.js"),global.joinp("DroidScript/"+files[reply]+"/"+files[reply]+".js"),true) )
 	  
