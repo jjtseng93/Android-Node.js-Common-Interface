@@ -32,9 +32,13 @@ npm run web
 - You have to install DroidScript on Android first at https://play.google.com/store/apps/details?id=com.smartphoneremote.androidscriptfree
 - Run web first, and you'll see the packing tool in the command prompt
 - Use numbers to select which APP to pack
+  * I have a default app called 0 for demonstrating the APIs in ANCI, you can test ANCI's functions there
 - After packing, your APP will be ready under DroidScript/app_name
   1. Copy it directly to /sdcard/DroidScript
   2. or Zip the app_name folder to app_name.zip, and change the file extension to .spk, open it by the DroidScript APP on Android
+- Open DroidScript and you'll find your APP installed, click on it to run directly or long-click to edit
+- By default all the console.log will be shown as alert message, 
+- if you want to disable it, edit droidscript_main.js or app_name.js and mark out the alert("Main: " in the web_OnConsole function
 # File system structure
 ## Overview
 - For a comprehensive view, please look at the Project_Structure.pptx or the demo image below
