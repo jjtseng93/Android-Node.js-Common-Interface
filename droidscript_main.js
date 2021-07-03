@@ -452,10 +452,8 @@ retres("已處理:" +hh+jss(r),res);
 function rrp(istr)
   {
     if(istr==null || typeof(istr)!="string") return "";
-    while(istr.indexOf("\\")!==-1)
-    {
-      istr=istr.replace("\\","/");
-    }
+    istr=istr.replace(/\\/g,"/");
+ 
     var tind=istr.indexOf(":/");
     while(tind!=-1)
     {
@@ -473,14 +471,14 @@ function rrp(istr)
     if(!istr.startsWith("sdcard/") && istr!="sdcard") return "";
     //if(istr.indexOf("/")===-1 && istr!=="sdcard") return "";
     var tarr=istr.split("/");
-    for(var i=0;i<tarr.length;i++)
+    for(let i of tarr)
     {
-      if(tarr[i]==="." || tarr[i]==="..")
+      if(i=="." || i=="..")
       return "";
     }
     	
 
-    return "/"+istr;
+    return ("/"+istr).replace("/sdcard","/storage/emulated/0");
   } // function rrp
   
 
