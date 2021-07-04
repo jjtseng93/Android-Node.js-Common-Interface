@@ -371,6 +371,8 @@ else if(await anci.hasd(selected_file))
 		selected_file=selected_file.slice(0,-1);
 	let parentFolder=selected_file.substr(0,selected_file.lastIndexOf("/")+1);
 	let sel2=await anci.showlist("選擇檔案 Select a file",[parentFolder,...(await anci.ls(selected_file))]);
+	if(!sel2) return "";
+	
 	if(sel2!=parentFolder)
 		selected_file+="/"+sel2;
 	else
