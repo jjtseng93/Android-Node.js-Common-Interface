@@ -85,8 +85,7 @@ var simple_functions=["GetClipboardText",
 					  "GetAppPath",
 					  "GetAppName",
 					  "GetVersion",
-		              "OpenUrl",
-					  "OpenFile"];
+		              "OpenUrl"];
 
 try{
 
@@ -144,6 +143,10 @@ else if(r.cmd==="SetOrientation")
 else if(simple_functions.includes(r.cmd))  //  simple functions
 {
 	retres(app[r.cmd](r.param),res)
+}
+else if(r.cmd==="OpenFile")
+{
+  retres(app.OpenFile(rrp(r.param)),res)
 }
 else if(r.cmd==="app.TextToSpeech")
 {

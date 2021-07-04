@@ -85,8 +85,7 @@ var simple_functions=["GetClipboardText",
 					  "GetAppPath",
 					  "GetAppName",
 					  "GetVersion",
-		              "OpenUrl",
-					  "OpenFile"];
+		              "OpenUrl"];
 
 try{
 
@@ -144,6 +143,10 @@ else if(r.cmd==="SetOrientation")
 else if(simple_functions.includes(r.cmd))  //  simple functions
 {
 	retres(app[r.cmd](r.param),res)
+}
+else if(r.cmd==="OpenFile")
+{
+  retres(app.OpenFile(rrp(r.param)),res)
 }
 else if(r.cmd==="app.TextToSpeech")
 {
@@ -452,10 +455,8 @@ retres("已處理:" +hh+jss(r),res);
 function rrp(istr)
   {
     if(istr==null || typeof(istr)!="string") return "";
-    while(istr.indexOf("\\")!==-1)
-    {
-      istr=istr.replace("\\","/");
-    }
+    istr=istr.replace(/\\/g,"/");
+ 
     var tind=istr.indexOf(":/");
     while(tind!=-1)
     {
@@ -473,14 +474,14 @@ function rrp(istr)
     if(!istr.startsWith("sdcard/") && istr!="sdcard") return "";
     //if(istr.indexOf("/")===-1 && istr!=="sdcard") return "";
     var tarr=istr.split("/");
-    for(var i=0;i<tarr.length;i++)
+    for(let i of tarr)
     {
-      if(tarr[i]==="." || tarr[i]==="..")
+      if(i=="." || i=="..")
       return "";
     }
     	
 
-    return "/"+istr;
+    return ("/"+istr).replace("/sdcard","/storage/emulated/0");
   } // function rrp
   
 
