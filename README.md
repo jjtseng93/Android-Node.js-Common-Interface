@@ -1,5 +1,5 @@
-Use HTML+CSS+JavaScript to design cross-platform APPs!
-If you want to start with Android development directly and skip Web/Electron, [jump to that secion directly](#start-with-pure-android-development-right-away)
+- Use HTML+CSS+JavaScript to design cross-platform APPs!
+- If you want to start with Android development directly and skip Web/Electron, [jump to that secion directly](#start-with-pure-android-development-right-away)
 # Introduction
 - This framework is named Android/Node.js Common Interface, abbreviated ANCI
 - Aim: Write your program ONLY ONCE by HTML+CSS+JavaScript, 
