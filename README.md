@@ -63,6 +63,8 @@ app.get("/",(q,s)=>s.redirect("/sdcard/napps/0/main.app")); // Change 0 to your_
 - A new APP called 0 will be installed to your DroidScript; run it to test ANCI's functions
 - Revise the Code.js and UI.html under /sdcard/DroidScript/0 to develop your own APP
 - Edit by your preferred text editor or use DroidScript directly by long-pressing on the APP icon
+- By default all the console.log will be shown as alert message, 
+- if you want to disable it, edit app_name.js and mark out the alert("Main: " in the web_OnConsole function
 - Later if you want to run your APP on Web or Electron, follow the instructions above and then manually copy your Code.js and UI.html to /sdcard/napps/app_name folder
 # File system structure
 ## Overview
