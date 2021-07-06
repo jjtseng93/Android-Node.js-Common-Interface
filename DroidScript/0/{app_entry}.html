@@ -59,6 +59,14 @@ window.platform="android";
 
 <body onload="anci.waitv(window,'passwd').then(OnStart);">
 
+<script>
+{
+let pwd=location.href.match(/passwd=[0-9]{16}/);
+if(pwd)
+  window.passwd=pwd;
+}
+</script>
+
 <div id="progress_fullscreen" style="padding:50px 10px 50px 10px;text-align:center;position:fixed;left:20%;top:15%;width:60%;display:none;z-index:100;background-color:#333333;color:white;border-radius:20px;font-size:24px;" onclick="this.style.display='none';"></div>
 
 <input id="browser_file_select_dialog" type="file" style="position: absolute; top: -100em">
