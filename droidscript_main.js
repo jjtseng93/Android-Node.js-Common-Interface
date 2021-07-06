@@ -8,6 +8,12 @@ fexists=app.FileExists;
 
 function OnBack()
 {
+  if(web.CanGoBack())
+  {
+    web.Back()
+	return;
+  }
+  
   web.Execute("if(typeof(OnStop)=='function') OnStop();");
   app.Exit();
 }
@@ -31,7 +37,7 @@ function OnStart()
 
     lay = app.CreateLayout( "absolute" );
 
-    web = app.CreateWebView( 1, 1, "Progress" );
+    web = app.CreateWebView( 1, 1, "NoApp" );
     web.SetOnConsole( web_OnConsole );
     lay.AddChild( web );
 
@@ -61,7 +67,7 @@ function web_OnConsole( consoleMsg )
 
 	  EvaluateAppCommand(obj,"anci.droidscript_resolves['"+obj.func+"']");
   }
-  else	  
+  else if(!app.isAPK())	  
     alert("Main: " + consoleMsg);
 }
 
