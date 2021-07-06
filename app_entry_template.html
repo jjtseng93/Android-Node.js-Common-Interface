@@ -63,7 +63,7 @@ window.platform="android";
 {
 let pwd=location.href.match(/passwd=[0-9]{16}/);
 if(pwd)
-  window.passwd=pwd[0];
+  window.passwd=pwd[0].substr(7);
 }
 </script>
 
