@@ -388,7 +388,7 @@ function complement_appentry(wkp,appnp)
 	   
    var sentry=sentryr;
 	   
-   if(!fexists(global.joinp(wkp+"~app_entry.html")))
+   if(!fexists(global.joinp(wkp+"{app_entry}.html")))
      {
        let icp="";
        if(  fexists(  global.joinp(wkp+(icp=("Img/"+appnp+".png"))  ))  )
@@ -396,11 +396,11 @@ function complement_appentry(wkp,appnp)
                    .replace(/x\-icon/g,"png");
 	   sentry=sentry.replace("title_string_to_be_replaced",appnp);
 
-       fs.writeFileSync(global.joinp(wkp+"~app_entry.html"),sentry);
+       fs.writeFileSync(global.joinp(wkp+"{app_entry}.html"),sentry);
      }
    else
      {
-       sentry=fs.readFileSync(global.joinp(wkp+"~app_entry.html")).toString("utf8");
+       sentry=fs.readFileSync(global.joinp(wkp+"{app_entry}.html")).toString("utf8");
      }
    sentry=sentry.substr(0,sentry.indexOf("</head>")+7)
                 .replace("title_string_to_be_replaced",appnp);

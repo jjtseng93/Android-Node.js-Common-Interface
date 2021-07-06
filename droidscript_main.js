@@ -43,7 +43,7 @@ function OnStart()
 
     app.AddLayout( lay );
 	
-	web.LoadUrl( "~app_entry.html" );
+	web.LoadUrl( "{app_entry}.html" );
     
     web.SetOnProgress(prog=>
 	  {
