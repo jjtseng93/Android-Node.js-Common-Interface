@@ -67,7 +67,7 @@ function web_OnConsole( consoleMsg )
 
 	  EvaluateAppCommand(obj,"anci.droidscript_resolves['"+obj.func+"']");
   }
-  else if(!app.isAPK())	  
+  else if(!app.IsAPK())	  
     alert("Main: " + consoleMsg);
 }
 
