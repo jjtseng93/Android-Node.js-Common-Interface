@@ -1,4 +1,5 @@
-Use HTML+CSS+JavaScript to design cross-platform APPs!
+- Use HTML+CSS+JavaScript to design cross-platform APPs!
+- If you want to start with Android development directly and skip Web/Electron, [jump to that secion directly](#start-with-pure-android-development-right-away)
 # Introduction
 - This framework is named Android/Node.js Common Interface, abbreviated ANCI
 - Aim: Write your program ONLY ONCE by HTML+CSS+JavaScript, 
@@ -39,6 +40,32 @@ npm run web
 - Open DroidScript and you'll find your APP installed, click on it to run directly or long-click to edit
 - By default all the console.log will be shown as alert message, 
 - if you want to disable it, edit droidscript_main.js or app_name.js and mark out the alert("Main: " in the web_OnConsole function
+## Start development on PC
+- if you have followed all the steps above, you will have a ANCI folder containing /sdcard/napps/0
+- you can revise its Code.js and UI.html directly and run as original
+### Using your own APP name
+- By GUI
+  + Use the ADD button inside the default APP 0 and choose a template
+  + Edit /sdcard/napps/your_app_name/Code.js and UI.html with your preferred text editor
+  + Run by the PLAY button inside the default APP 0
+- Manually
+  + Copy the folder /sdcard/napps/your_preferred_template_app to /sdcard/napps/your_app_name manually
+  + Edit /sdcard/napps/your_app_name/Code.js and UI.html with your preferred text editor
+  + Run on Web by changing the URL to /sdcard/napps/your_app_name/main.app
+  + Run on Electron by changing this line in web_electron_server_anci.js:
+```
+app.get("/",(q,s)=>s.redirect("/sdcard/napps/0/main.app")); // Change 0 to your_app_name
+```
+## Start with pure Android development right away
+- Install DroidScript on Android at https://play.google.com/store/apps/details?id=com.smartphoneremote.androidscriptfree
+- Download the 0.spk from this repo's DroidScript folder and open it with DroidScript: https://jjtseng93.github.io/Android-Node.js-Common-Interface/DroidScript/0.spk
+- If you failed installing this way, rename the 0.spk to 0.zip and extract the folder "0" to /sdcard/DroidScript manually
+- A new APP called 0 will be installed to your DroidScript; run it to test ANCI's functions
+- Revise the Code.js and UI.html under /sdcard/DroidScript/0 to develop your own APP
+- Edit by your preferred text editor or use DroidScript directly by long-pressing on the APP icon
+- By default all the console.log will be shown as alert message, 
+- if you want to disable it, edit app_name.js and mark out the alert("Main: " in the web_OnConsole function
+- Later if you want to run your APP on Web or Electron, follow the instructions above and then manually copy your Code.js and UI.html to /sdcard/napps/app_name folder
 # File system structure
 ## Overview
 - For a comprehensive view, please look at the Project_Structure.pptx or the demo image below
