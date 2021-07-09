@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="nlib/css/font_awesome.min.css">
 
 <script>
-function OnStart()
+async function OnStart()
 {
 prompt=anci.Prompt;
 
@@ -29,6 +29,19 @@ prompt=anci.Prompt;
 	
   if(window.platform=="android" && typeof(routine_init)=="function")
     routine_init();
+
+  if(window.platform!="android" && !location.pathname.endsWith("/main.app"))
+    {
+	 await new Promise(resolve=>
+	 {
+       $.get('UI.html')
+       .then(r=>
+	   {	  
+	     $(document.body).append(r);
+		 resolve();
+	   });      
+	 });
+    }
 
   if(window.platform!="android")
     {
@@ -50,22 +63,29 @@ Above is for both DroidScript and Web/Electron
 Below is for DroidScript Only and will not be integrated into the web page
 -->
 
-<script>
-window.platform="android";
-</script>
-
-<script src="nlib/droidscript_api_anci.js"></script>
-<script src="Code.js"></script>
-
-<body onload="anci.waitv(window,'passwd').then(OnStart);">
 
 <script>
 {
-let pwd=location.href.match(/passwd=[0-9]{16}/);
-if(pwd)
-  window.passwd=pwd[0].substr(7);
+let qarr=location.search.substr(1).split("&")
+.map(ii=>(ii.split("=").map(iii=>decodeURIComponent(iii))));
+
+window.temp_obj=Object.fromEntries(qarr)
+window.passwd=window.temp_obj.passwd;
+window.platform=window.platform || window.temp_obj.platform || "android";
+
 }
 </script>
+
+<script src="nlib/droidscript_api_anci.js"></script>
+<script src="nlib/web_electron_api_anci.js"></script>
+<script>
+anci.query=window.temp_obj
+delete window.temp_obj;
+</script>
+
+<script src="Code.js"></script>
+
+<body onload="if(window.platform=='android'){anci.waitv(window,'passwd').then(OnStart);}">
 
 <div id="progress_fullscreen" style="padding:50px 10px 50px 10px;text-align:center;position:fixed;left:20%;top:15%;width:60%;display:none;z-index:100;background-color:#333333;color:white;border-radius:20px;font-size:24px;" onclick="this.style.display='none';"></div>
 
@@ -74,3 +94,8 @@ if(pwd)
 </body>
 
 </html>
+
+
+
+
+
