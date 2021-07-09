@@ -6,6 +6,9 @@
 
 window.platform = window.platform || "web";
 
+if(window.platform == "web" || window.platform == "electron")
+{  //  if platform matches
+
 anci={alert2_resolves:{},showlist_resolves:{}};
 
 $(OnStart);
@@ -19,9 +22,12 @@ window.nodeapi=(data,cbf)=>{  //  will be overrided later on Android
 
 var url;
 
-  url=( (  ge("storage_location_url") && ge("storage_location_url").value  ) ||
+  url=( anci.query.storage_location_url || (  ge("storage_location_url") && ge("storage_location_url").value  ) ||
   	    "local"  
 	  ).trim();
+  
+  if(ge("storage_location_url"))
+    ge("storage_location_url").value=url;
 
   var xhr;
   if (window.XMLHttpRequest)
@@ -39,6 +45,7 @@ var url;
   else
   {
     var localorp="/storage_proxy";
+
     var dobj=JSON.parse(data || "{}");
     dobj.url=[];
     if(url.startsWith("["))
@@ -47,6 +54,9 @@ var url;
       dobj.url.push(url);
 
     data=JSON.stringify(dobj);
+	
+    if(!location.pathname.endsWith("/main.app"))
+      localorp=dobj.url.shift()+"?passwd="+window.passwd;
   }
 
 
@@ -136,6 +146,13 @@ anci.HttpRequest=(method_optional,url,encoding,data,headers)=>
 };
 
 anci.xhr=anci.HttpRequest;
+
+anci.RunRemoteApp=(url)=>
+{
+    anci.OpenUrl(url+`?platform=${window.platform}&passwd=${window.passwd}&storage_location_url=${location.protocol+"//"+location.host+"/storage_local"}`);
+}
+
+anci.remoteapp=anci.RunRemoteApp;
 
 }  //  Network End
 
@@ -470,10 +487,16 @@ anci.GetDisplayHeight=function()
 
 anci.OpenUrl=function(url)
 {
-	let upmost=window;
-	while(upmost.opener!=null)
+	if(window.platform == "electron")
+	{
+	  let upmost=window;
+	  while(upmost.opener!=null)
 		upmost=upmost.opener;
-    return upmost.open(url);
+	  return upmost.open(url);
+	}
+	else
+	  return window.open(url);
+    
 };
 
 anci.openu=anci.OpenUrl;
@@ -1057,6 +1080,12 @@ ge=(elementID)=>document.getElementById(elementID);
 
 
 }  //  Common libraries End
+
+
+
+
+}  //  if platform matches End
+
 
 
 

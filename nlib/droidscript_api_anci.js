@@ -3,6 +3,12 @@
 
 
 
+
+if(window.platform == "android")
+{  //  if platform matches
+
+
+
 function routine_init()
 {
   window.OnLoad_Promise=new Promise(async (resolve)=>
@@ -122,6 +128,13 @@ anci.HttpRequest=(method_optional,url,encoding,data,headers)=>
 };
 
 anci.xhr=anci.HttpRequest;
+
+anci.RunRemoteApp=(url)=>
+{
+    location.href=(url+`?passwd=${window.passwd}`);
+}
+
+anci.remoteapp=anci.RunRemoteApp;
 
 }  //  Network End
 
@@ -892,6 +905,12 @@ ge=(elementID)=>document.getElementById(elementID);
 
 }  //  Common libraries End
 
+
+
+
+
+
+}  //  if platform matches End
 
 
 
