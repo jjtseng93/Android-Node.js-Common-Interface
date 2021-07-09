@@ -50,7 +50,7 @@ var app=express();
 fetch=require("node-fetch");
 const util = require('util');
 var sentryr=fs.readFileSync(global.joinp("app_entry_template.html")).toString("utf8");
-var sanci=fs.readFileSync(global.joinp("web_electron_api_ANCI.js")).toString("utf8");
+var sanci=fs.readFileSync(global.joinp("nlib/web_electron_api_ANCI.js")).toString("utf8");
 var sdefbox=`
 
 
@@ -67,6 +67,14 @@ var sdefbox=`
 
 `;
 var gbcache={};
+
+var passwd=(()=>
+{
+  var min=100000001,max=999999999
+  rnd=Math.floor(Math.random() * (max - min) + min)
+  return rnd+""+Date.now();
+})()
+
 var pathn;
 
 {  //  preset files
@@ -109,12 +117,12 @@ app.get("/",(q,s)=>s.redirect("/sdcard/napps/0/main.app"));
 
 app.get("/favicon.ico",(q,s)=>s.sendFile(global.joinp("favicon.ico")));
 
-app.get("/sdcard/napps/*/main.app",(req,res)=>{
+app.get(/\/sdcard\/napps\/[^\/]+\/main.app/,(req,res)=>{
   gen_app_html(req,res);
   //res.end("<h1>hello app</h1>");
 });
 
-app.use("/sdcard/napps/*/nlib",express.static(global.joinp("sdcard/nlib")));
+app.use(/\/sdcard\/napps\/[^\/]+\/nlib/,express.static(global.joinp("nlib")));
 
 app.use("/sdcard",express.static(global.joinp("sdcard")));
 
@@ -132,6 +140,14 @@ app.get("/pdf",(req,res)=>{
   .then(r=>r.buffer())
   .then(r=>res.end(r))
   .catch(e=>res.end(e.stack));
+});
+
+app.use((q,s,n)=>
+{
+    if(q.query.passwd==passwd)
+      s.set("Access-Control-Allow-Origin","*");
+      s.set("Access-Control-Allow-Headers","Content-Type");
+    n()
 });
 
 app.post("/storage_local",(req,res)=>{
@@ -162,12 +178,12 @@ app.post("/storage_proxy",(req,res)=>{
 
 if(global.platform=="web")
 {
-app.listen(web_portn,hostName);//.listen(portn,"::1");
-csl(`Server Started on ${hostName}, port:`+web_portn+hh);
+  server=app.listen(web_portn,hostName);//.listen(portn,"::1");
+  csl(`Server Started on ${hostName}, port:`+web_portn+hh);
 }
 else if(global.platform=="electron")
 {
-  const server = app.listen(0, "::ffff:127.0.0.1", () => {
+  server = app.listen(0, "::ffff:127.0.0.1", () => {
   console.log('Server Started on ::ffff:127.0.0.1, port:', server.address().port);
   global.resolvePort && global.resolvePort(server.address().port);
 });
@@ -238,8 +254,8 @@ function pack_to_droidscript()
 	  
 	  csl("\x1b[36m%s\x1b[0m","\r\nCopying /sdcard/napps/APP folder to /DroidScript...\r\n")
 	  console.log(await CopyFolder(global.joinp("sdcard/napps/"+files[reply]),global.joinp("DroidScript"),true));
-	  csl("\x1b[36m%s\x1b[0m","\r\nCopying /sdcard/nlib folder to /DroidScript/APP...\r\n")
-	  console.log(await CopyFolder(global.joinp("sdcard/nlib"),global.joinp("DroidScript/"+files[reply]),true));
+	  csl("\x1b[36m%s\x1b[0m","\r\nCopying nlib folder to /DroidScript/APP...\r\n")
+	  console.log(await CopyFolder(global.joinp("nlib"),global.joinp("DroidScript/"+files[reply]),true));
 	  csl("\x1b[36m%s\x1b[0m","\r\nCopying droidscript_main.js to "+"DroidScript/"+files[reply]+"/"+files[reply]+".js...\r\n");
 	  console.log( CopyFile(global.joinp("droidscript_main.js"),global.joinp("DroidScript/"+files[reply]+"/"+files[reply]+".js"),true) )
 	  
@@ -274,6 +290,17 @@ Select a function below: 請選擇一項功能
 p = Pack APP to Android's DroidScript ----- p = 打包APP到安卓的DroidScript
 r = Restart Server ----- r = 重新啟動伺服器
 e = Evaluate inputs ----- e = 執行輸入的程式碼
+
+public = Restart server and permit all ip sources ----- public = 重新啟動伺服器，並且開放所有IP來源
+
+  Warning: "public" will automatically permit anyone from the internal network, i.e. IP starting with 192.168.x.x or 10.x.x.x to use your APP. 
+  If you use NAT, anyone from the public may use your APP! 
+  Use at your own risk! You can use "r" to resume secure environment.
+  
+  警告：如果使用"public"功能，所有來自內部網路的使用者都能使用您的APP，也就是IP開頭是192.168.x.x或是10.x.x.x的使用者。
+  如果您使用了NAT功能，則任何公眾皆有可能使用您的APP！
+  請您自行小心使用！您可以使用"r"功能來回到安全環境。
+  
 CTRL+C * 2 = Exit Server
 
 `);
@@ -293,6 +320,10 @@ rl.question(">", (answer) => {
 	  evaluate_stdin();
 	  return;
 	  break;
+	case "public":
+	  server.close();
+	  server.listen(web_portn);
+	  break;
 	default:
 	  console.log(`Unknown command ${answer}`)
   }
@@ -302,7 +333,8 @@ rl.question(">", (answer) => {
 
 }
 
-ask()
+if(global.platform=="web")
+  ask()
 
 }  // Reading command prompt input End
 
@@ -344,6 +376,7 @@ var cryptip=(iipn,ikey)=>
 
 var cip=req.connection.remoteAddress;
 var otherpass=(cip.indexOf(":192.168.")!=-1 || cip.indexOf(":10.")!=-1 );
+
 if((tlist.ip).indexOf(cip)===-1 && !otherpass)
   {
     var cipn=cip;
@@ -428,9 +461,9 @@ try{
    var s_code=fs.readFileSync(global.joinp(wkp+"Code.js")).toString("utf8");
 
    var sentry=complement_appentry(wkp,appnp);
-   
 
-       var squery="anci.query="+jss(req.query)+";"+hh+hh;
+       var squery=`
+	   window.passwd="${passwd}"; anci.query=`+jss(req.query)+";"+hh+hh;
        var stlocurl=req.query.storage_location_url;
        if(stlocurl)
          {
