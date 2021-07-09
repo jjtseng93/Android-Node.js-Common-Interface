@@ -152,7 +152,10 @@ else if(simple_functions.includes(r.cmd))  //  simple functions
 }
 else if(r.cmd==="OpenFile")
 {
-  retres(app.OpenFile(rrp(r.param)),res)
+  if(!rrp(r.param))
+    retres("Error, file doesn't exist or not allowed!",res);
+  else
+    retres(app.OpenFile(rrp(r.param)),res)
 }
 else if(r.cmd==="app.TextToSpeech")
 {
@@ -477,7 +480,7 @@ function rrp(istr)
     {
       istr=istr.substr(0,istr.length-1);
     }
-    if(!istr.startsWith("sdcard/") && istr!="sdcard") return "";
+    if(!istr.startsWith("sdcard/") && istr!="sdcard" && !istr.startsWith("Assets")) return "";
     //if(istr.indexOf("/")===-1 && istr!=="sdcard") return "";
     var tarr=istr.split("/");
     for(let i of tarr)
