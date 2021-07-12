@@ -464,6 +464,7 @@ anci.GetDisplayHeight=function()
  
 anci.TextToSpeech=function(text,pitch,rate,stream,locale,engine)
 {
+  pitch=pitch || 1; rate=rate || 1;
   var sobj={"cmd":"app.TextToSpeech",text,pitch,rate,stream,locale,engine};
   return nodeapi(JSON.stringify(sobj),"pm");
 };

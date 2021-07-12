@@ -615,8 +615,8 @@ anci.TextToSpeech=function( rtext,rpitch,rrate)
 try{
   var msg = new window.SpeechSynthesisUtterance(rtext);
 
-  msg.pitch=rpitch;
-  msg.rate=rrate;
+  msg.pitch=rpitch || 1;
+  msg.rate=rrate || 1;
 
 var engc=0;
 
@@ -636,6 +636,7 @@ return new Promise(resolve=>{
 
 msg.onend=resolve;
 
+window.speechSynthesis.cancel()
 window.speechSynthesis.speak(msg);
 
 });

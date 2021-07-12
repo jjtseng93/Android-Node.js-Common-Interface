@@ -27,6 +27,8 @@ function OnConfig()
 
 function OnStart()
 {
+	tts_running=null;
+	
 	app.EnableBackKey(false);
 	
 	app.LoadScript("nlib/iconv.js");
@@ -159,10 +161,19 @@ else if(r.cmd==="OpenFile")
 }
 else if(r.cmd==="app.TextToSpeech")
 {
+  if(tts_running)
+  {
+    retres("Read Text & Interrupted",tts_running);
+	tts_running=null;
+	app.TextToSpeech("");
+  }
+
   app.TextToSpeech(r.text,r.pitch,r.rate,()=>{
 	retres("Read text",res)  
-	  
+	tts_running=null;
   },r.stream,r.locale,r.engine);
+  
+  tts_running=res;
 }
 else if(r.cmd==="app.WriteFileInBytes")
 {
