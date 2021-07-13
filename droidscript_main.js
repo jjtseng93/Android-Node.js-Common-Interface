@@ -6,6 +6,11 @@ const hh="\r\n";
 dexists=app.FolderExists;
 fexists=app.FileExists;
 
+//  These 2 lines below makes DroidScript register your app to Android's share via menu when in APK 下面這兩行會讓DroidScript把你的APP註冊到安卓系統的分享選單(當你建立APK時)
+//  If your app doesn't want to receive shared data, remove these 2 lines 如果你的APP並不想接收分享的資料, 請移除這兩行
+app.GetSharedFiles();
+app.GetSharedText();
+
 function OnBack()
 {
   if(web.CanGoBack())
@@ -56,6 +61,12 @@ function OnStart()
 
 }
 
+function OnData(isStartup)
+{
+if(!isStartup)
+	web.Execute("OnData()");
+}
+
 function web_OnConsole( consoleMsg )
 {
   consoleMsg=consoleMsg || "";
@@ -73,9 +84,18 @@ function web_OnConsole( consoleMsg )
     alert("Main: " + consoleMsg);
 }
 
-function retres(str,func)
+function retres(str,func,spread_array)
 {
 	str=str || "";
+	var obj={str};
+	if(!spread_array)
+	  web.Execute(`anci.tmpobj=${JSON.stringify(obj)};
+                   ${func}(anci.tmpobj.str)`);
+    else
+	  web.Execute(`anci.tmpobj=${JSON.stringify(obj)};
+                   ${func}(...anci.tmpobj.str)`);
+	
+	return;
 	str+="";
 	var tic="`";
 	if(str.includes(tic))
@@ -93,7 +113,12 @@ var simple_functions=["GetClipboardText",
 					  "GetAppPath",
 					  "GetAppName",
 					  "GetVersion",
-		              "OpenUrl"];
+		              "OpenUrl",
+					  "PreventScreenLock",
+					  "SetSharedApp",
+					  "GetSharedText",
+					  "GetSharedFiles",
+					  "DisableKeys"];
 
 try{
 
@@ -136,8 +161,14 @@ else
 
   } //else encoding!=mem
 }
+else if(r.cmd==="SetOnKey")
+{
+  app.SetOnKey((...arr)=>retres(arr,"anci.SetOnKey_callback",true))
+  retres("Set OnKey callback",res);
+}
 else if(r.cmd==="SetOrientation")
 {
+	r.param=r.param[0];
 	if(!isNaN(r.param))
 	{
 		r.param-=0;
@@ -150,10 +181,11 @@ else if(r.cmd==="SetOrientation")
 }
 else if(simple_functions.includes(r.cmd))  //  simple functions
 {
-	retres(app[r.cmd](r.param),res)
+	retres(app[r.cmd](...r.param),res)
 }
 else if(r.cmd==="OpenFile")
 {
+  r.param=r.param[0];
   if(!rrp(r.param))
     retres("Error, file doesn't exist or not allowed!",res);
   else

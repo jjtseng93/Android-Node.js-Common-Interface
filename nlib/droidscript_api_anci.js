@@ -20,9 +20,12 @@ function routine_init()
     $.get("UI.html").then(UI_html=>
     {
       $(document.body).append(UI_html);
-	  if(typeof(OnLoad)=="function")
-        $(OnLoad);
-      $(()=>resolve("OnLoad run!"));
+	  $(async ()=>{
+	    if(typeof(OnLoad)=="function")
+          await OnLoad();
+		  
+		resolve("OnLoad run!"+(await OnData(true)))
+	  });
 
     }); // get UI.html then
 
@@ -438,9 +441,14 @@ let fnarr=["GetClipboardText",
 		   "GetAppName",
 		   "GetVersion",
 		   "OpenUrl",
-		   "OpenFile"];
+		   "OpenFile",
+		   "PreventScreenLock",
+		   "SetSharedApp",
+		   "GetSharedText",
+		   "GetSharedFiles",
+		   "DisableKeys"];
 for(let i of fnarr)
-	anci[i]=(param)=>anci.GetByFunctionName(i,param);
+	anci[i]=(...param)=>anci.GetByFunctionName(i,param);
 	
 }  //  batching simple functions End
 
@@ -451,6 +459,26 @@ anci.getappn=anci.GetAppName;
 anci.getv=anci.GetVersion;
 anci.openu=anci.OpenUrl;
 anci.openf=anci.OpenFile;
+
+anci.SetOnKey_callbacks=[];
+
+anci.SetOnKey=(callback)=>
+{
+  if(anci.SetOnKey_callbacks.length==0)
+  {
+    var sobj={"cmd": "SetOnKey"};
+    nodeapi(JSON.stringify(sobj),"pm");  
+  }
+  anci.SetOnKey_callbacks.push(callback);
+}
+
+anci.SetOnKey_callback=(...arr)=>
+{
+  for(let i of anci.SetOnKey_callbacks)
+  {
+    if(typeof(i) == "function") i(...arr); 
+  }
+}
 
 anci.GetDisplayWidth=function()
  {
