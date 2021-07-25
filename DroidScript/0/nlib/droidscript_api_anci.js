@@ -20,9 +20,12 @@ function routine_init()
     $.get("UI.html").then(UI_html=>
     {
       $(document.body).append(UI_html);
-	  if(typeof(OnLoad)=="function")
-        $(OnLoad);
-      $(()=>resolve("OnLoad run!"));
+	  $(async ()=>{
+	    if(typeof(OnLoad)=="function")
+          await OnLoad();
+		  
+		resolve("OnLoad run!"+(await OnData(true)))
+	  });
 
     }); // get UI.html then
 
@@ -438,9 +441,14 @@ let fnarr=["GetClipboardText",
 		   "GetAppName",
 		   "GetVersion",
 		   "OpenUrl",
-		   "OpenFile"];
+		   "OpenFile",
+		   "PreventScreenLock",
+		   "SetSharedApp",
+		   "GetSharedText",
+		   "GetSharedFiles",
+		   "DisableKeys"];
 for(let i of fnarr)
-	anci[i]=(param)=>anci.GetByFunctionName(i,param);
+	anci[i]=(...param)=>anci.GetByFunctionName(i,param);
 	
 }  //  batching simple functions End
 
@@ -451,6 +459,26 @@ anci.getappn=anci.GetAppName;
 anci.getv=anci.GetVersion;
 anci.openu=anci.OpenUrl;
 anci.openf=anci.OpenFile;
+
+anci.SetOnKey_callbacks=[];
+
+anci.SetOnKey=(callback)=>
+{
+  if(anci.SetOnKey_callbacks.length==0)
+  {
+    var sobj={"cmd": "SetOnKey"};
+    nodeapi(JSON.stringify(sobj),"pm");  
+  }
+  anci.SetOnKey_callbacks.push(callback);
+}
+
+anci.SetOnKey_callback=(...arr)=>
+{
+  for(let i of anci.SetOnKey_callbacks)
+  {
+    if(typeof(i) == "function") i(...arr); 
+  }
+}
 
 anci.GetDisplayWidth=function()
  {
@@ -464,6 +492,7 @@ anci.GetDisplayHeight=function()
  
 anci.TextToSpeech=function(text,pitch,rate,stream,locale,engine)
 {
+  pitch=pitch || 1; rate=rate || 1;
   var sobj={"cmd":"app.TextToSpeech",text,pitch,rate,stream,locale,engine};
   return nodeapi(JSON.stringify(sobj),"pm");
 };
@@ -553,12 +582,112 @@ anci.ListObjectProperties=function(obj)
             ret.unshift(objO.substr(0,1000));
           else if(oname=="Array")
             ret.unshift(objO.slice(0,10).join(","));
+		  else if(oname=="Function" || oname=="AsyncFunction")
+			ret.unshift(objO.toString().match(/\(.*?\)/) || "")
 
           ret.unshift(oname || "No Constructor");
           return ret;
 }
 
 anci.objls=anci.ListObjectProperties;
+
+anci.ObjectBrowser=async function(rootObj)
+  {
+    if(!rootObj) return;
+
+    let prt=(s)=>{
+      let tind=s.lastIndexOf("][");
+      if(tind!=-1)
+        return s.substr(0,tind+1);
+      else
+        return "rootObj";
+    };
+
+    let children=anci.objls(rootObj);
+
+    children=children.map(i=>(`<span data-path="rootObj[`+"`"+i+"`"+`]">${i}</span>`));
+
+    var reso=await anci.showlist("rootObj",children,true);
+    var res=$(reso.toString()).data("path");
+
+    console.log(res);
+
+    var prop=null;
+    prop=eval(res);
+
+    if(prop!=null)
+    {
+      while(1)
+      {
+
+        let children=anci.objls(prop);
+        children=children.map(i=>(`<span data-path="${res}[`+"`"+i+"`"+`]">${i}</span>`));
+        children.unshift(`<span data-path="${prt(res)}">上一層 Parent</span>`);
+
+        reso=await anci.showlist(res,children,true);
+        res=$(reso.toString()).data("path");
+        if(!res) return;
+        console.log(res)
+        prop=eval(res);
+
+        if(prop==null)
+          {
+            res=prt(res);
+            prop=eval(res);
+          }
+      }
+    }
+    else
+      return objBrowser(rootObj);
+}
+
+anci.objbs=anci.ObjectBrowser;
+
+anci.EnableObjectChaining=()=>
+{
+
+anci.branched_obj=[]
+
+Object.prototype.c=function(func,spread)
+{
+  if(typeof(func)=="function") 
+  {
+    if(spread)
+      return func(...this);
+    else
+      return func(this);
+  }
+  return this+func;
+}
+
+Object.prototype.b=function(func)
+{
+  anci.branched_obj.push(this);
+  return this.c(func);
+}
+
+Object.prototype.m=function(func)
+{
+  var that=[...anci.branched_obj,this];
+  anci.branched_obj=[];
+  return this.c.call(that,func,true);
+}
+
+
+}
+
+anci.objchainon=anci.EnableObjectChaining;
+
+anci.DisableObjectChaining=()=>
+{
+delete Object.prototype.c;
+delete Object.prototype.b;
+delete Object.prototype.m;
+
+anci.branched_obj=[]
+}
+
+anci.objchainoff=anci.DisableObjectChaining;
 
 {  //  GUI
 
@@ -590,7 +719,7 @@ anci.toast=anci.ShowPopup;
 
 
 
-alert2=async (msg,textAsHtml)=>{
+alert2=async (msg,textAsHtml,focus_ok)=>{
   if(msg && typeof(msg)=="object")
     msg=JSON.stringify(msg,null,1);
 
@@ -627,7 +756,8 @@ alert2=async (msg,textAsHtml)=>{
   
   $("body").append(dlg);
   
-  dlg.find("button").last().focus();
+  if(focus_ok)
+    dlg.find("button").last().focus();
   
   return await new Promise(resolve=>{
 	  anci.alert2_resolves[uniqueID]=resolve;
@@ -683,6 +813,23 @@ ${title_optional}</h3>
 anci.showlist.Name="ShowList";
 
 anci.CreateListDialog=anci.showlist;
+
+anci.DoubleClick=(single_click_handler,double_click_handler,button_this,event_obj)=>
+{
+  if(button_this.getAttribute("clicked_before"))
+    {
+      clearTimeout(button_this.getAttribute("clicked_before"))
+      button_this.setAttribute("clicked_before","")
+      double_click_handler(event_obj)
+    }
+  else
+    {
+	  var h=setTimeout(()=>{ single_click_handler(event_obj);button_this.setAttribute("clicked_before",""); },500);
+      button_this.setAttribute("clicked_before",h)
+    }
+}
+
+anci.dclick=anci.DoubleClick;
 
 }  //  GUI End
 
