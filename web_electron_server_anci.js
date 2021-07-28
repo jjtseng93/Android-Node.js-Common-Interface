@@ -519,114 +519,90 @@ res.end(str);
 
 async function EvaluateAppCommand(r,res)
 {
+var wf=util.promisify(fs.writeFile);
+var rf=util.promisify(fs.readFile);
+
 try{
 
-if(r.cmd==null) r.cmd="";
+r.cmd=r.cmd || "";
 console.log(r.cmd);
 
 if(r.cmd==="app.ReadFile")
 {
- if(r.encoding=="mem")
+  if(r.encoding=="mem")
   {
-   csl("Read From Memory:"+hh+r.path);
-    if(gbcache[r.path]==null)
-      {
-        retres("",res);
-      }
-    else
-      {
-        retres(gbcache[r.path],res);
-      }
-   return false;
-  } //if encoding==mem
-if(rrp(r.path)==="")
+    csl("Read From Memory:"+hh+r.path);
+    retres(gbcache[r.path] ?? "",res);
+    return true;
+  }  //  if encoding==mem
+
+  if(!rrp(r.path))
   {
     retres("Failed to read" +hh+ r.path,res);
     return false;
   }
-else
+  else
   {
+    var data = await rf(global.joinp(rrp(r.path)));
 
-fs.readFile(global.joinp(rrp(r.path)), (err, data) =>
-   {
-     if (err)
-     {
-     retres("Failed to read" +hh+ r.path,res);
-     return false;
-     }
-     if(data==null)
-     {
-     retres("Failed to read" +hh+ r.path,res);
-     return false;
-     }
-     //if(r.encoding==null)
-     //r.encoding=jschd.detect(data).encoding;
-     if(r.encoding==null)
-     r.encoding="utf8";
-     retres(iconv.decode(data,r.encoding),res);
-     return true;
-   });
-
-    } //else encoding!=mem
+    if(!data)
+    {
+      retres("Failed to read" +hh+ r.path,res);
+      return false;
+    }
+	
+    r.encoding=r.encoding || "utf8";
+  
+    retres(  iconv.decode(data,r.encoding)  ,res);
+    return true;
+	
+  }  //  else encoding!=mem && r.path
+}
+else if(r.cmd==="app.WriteFileInBytes")
+{
+    await wf(rrp(r.path),Buffer.from(r.byteArray))
+    retres("Successfully written"+hh+r.path,res);
 }
 else if(r.cmd==="app.WriteFile")
 {
- if(r.encoding=="mem")
+  if(r.encoding=="mem")
   {
-   csl("Written to memory:"+hh+r.path);
-    if(r.text==null)
-      r.text="";
-    gbcache[r.path]=r.text;
+    csl("Written to memory:"+hh+r.path);
+    gbcache[r.path]=r.text ?? "";
     retres("Written to memory:"+hh+r.path,res);
-   return false;
-  } //if encoding==mem
-else if(r.encoding=="email")
-    {
-      try
-       {
-         var obj=JSON.parse(r.text);
-         sendmail(obj.to,obj.subject,obj.content,res);
-       }
-      catch(e)
-       {
-         retres(util.inspect(e),res);
-       }
-     return false;
-    }
-if(rrp(r.path)==="")
+    return true;
+  }
+  else if(r.encoding=="email")
+  {
+      var obj=JSON.parse(r.text);
+      sendmail(obj.to,obj.subject,obj.content,res);
+  }
+  
+  if(!rrp(r.path))
   {
     retres("Failed to write to" +hh+ r.path,res);
     return false;
   }
-else
+  else
   {
+    r.encoding=r.encoding || "utf8";
+    r.text=r.text || "";
+	
+    var fbuff=iconv.encode(r.text,r.encoding);
+    await wf(  global.joinp(rrp(r.path))  , fbuff );
+	retres("Successfully written"+hh+r.path,res);
 
-if(r.encoding==null)
-r.encoding="utf8";
-if(r.text==null) r.text="";
-//csl(sobj[0]);
-var fbuff=iconv.encode(r.text,r.encoding);
-fs.writeFile(global.joinp(rrp(r.path)),fbuff, (err) =>
-   {
-     if (err)
-     {
-     retres("Failed to write to"+hh+r.path,res);
-     return false;
-     }
-     retres("Successfully written"+hh+r.path,res);
-   });
-
-    } //else encoding!=mem
+  }  //  else encoding!=mem && r.path
 }
 else if(r.cmd==="app.MakeFolder")
 {
   r.path=global.joinp(rrp(r.path));
-  if(r.path=="")
-    {
-     retres("Failed to create"+hh+r.path,res);
-
-     return false;
-    }
+  if(!r.path)
+  {
+    retres("Failed to create"+hh+r.path,res);
+    return false;
+  }
+  
   var farr=r.path.split("/");
   var tmpf=farr[0];
   var tflag=false;
@@ -645,6 +621,7 @@ else if(r.cmd==="app.MakeFolder")
         }
     });
   if(tflag) return false;
+  
   retres("Successfully created"+hh+r.path,res);
   return true;
 }
