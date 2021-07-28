@@ -1,3 +1,13 @@
+
+
+
+
+
+
+
+
+
+
 gbcache={};
 const csl=console.log;
 const jss=JSON.stringify;
@@ -122,42 +132,35 @@ var simple_functions=["GetClipboardText",
 
 try{
 
-if(r.cmd==null) r.cmd="";
+r.cmd=r.cmd || "";
 console.log(r.cmd);
 
 if(r.cmd==="app.ReadFile")
 {
- if(r.encoding=="mem")
+  if(r.encoding=="mem")
   {
-   csl("Read From Memory:"+hh+r.path);
-    if(gbcache[r.path]==null)
-      {
-        retres("",res);
-      }
-    else
-      {
-        retres(gbcache[r.path],res);
-      }
-   return false;
-  } //if encoding==mem
-if(rrp(r.path)==="")
+    csl("Read From Memory:"+hh+r.path);
+    retres(gbcache[r.path] ?? "",res);
+    return true;
+  }  //  if encoding==mem
+
+  if(!rrp(r.path))
   {
     retres("Failed to read" +hh+ r.path,res);
     return false;
   }
-else
+  else
   {
-
-    data=readallbytes(rrp(r.path));
-     if(data==null)
-     {
+    var data=readallbytes(rrp(r.path));
+    if(!data)
+    {
        retres("Failed to read" +hh+ r.path,res);
        return false;
-     }
-     if(r.encoding==null)
-     r.encoding="utf8";
-     retres(iconv.decode(new Uint8Array(data),r.encoding),res);
-     return true;
+    }
+	
+    r.encoding=r.encoding || "utf8";
+    retres(iconv.decode(new Uint8Array(data),r.encoding),res);
+    return true;
 
   } //else encoding!=mem
 }
@@ -174,6 +177,9 @@ else if(r.cmd==="SetOrientation")
 		r.param-=0;
 		r.param=["Default","Portrait","Landscape","ReversePortrait","ReverseLandscape"][r.param];
 	}
+	else
+	  r.param+='';
+  
 	app.SetOrientation(r.param,()=>
 	{
 	  retres("Successfully set orientation to: "+r.param,res);
@@ -181,11 +187,13 @@ else if(r.cmd==="SetOrientation")
 }
 else if(simple_functions.includes(r.cmd))  //  simple functions
 {
+	if(r.cmd=="OpenUrl" || r.cmd=="DisableKeys")
+	  r.param[0]+='';
 	retres(app[r.cmd](...r.param),res)
 }
 else if(r.cmd==="OpenFile")
 {
-  r.param=r.param[0];
+  r.param=r.param[0]+'';
   if(!rrp(r.param))
     retres("Error, file doesn't exist or not allowed!",res);
   else
@@ -214,47 +222,35 @@ else if(r.cmd==="app.WriteFileInBytes")
 }
 else if(r.cmd==="app.WriteFile")
 {
- if(r.encoding=="mem")
+  if(r.encoding=="mem")
   {
-   csl("Written to memory:"+hh+r.path);
-    if(r.text==null)
-      r.text="";
-    gbcache[r.path]=r.text;
+    csl("Written to memory:"+hh+r.path);
+    gbcache[r.path]=r.text ?? "";
     retres("Written to memory:"+hh+r.path,res);
-   return false;
-  } //if encoding==mem
-else if(r.encoding=="email")
-    {
-      try
-       {
-         var obj=JSON.parse(r.text);
-         sendmail(obj.to,obj.subject,obj.content,res);
-       }
-      catch(e)
-       {
-         retres(util.inspect(e),res);
-       }
-     return false;
-    }
-if(rrp(r.path)==="")
+    return true;
+  }
+  else if(r.encoding=="email")
+  {
+      var obj=JSON.parse(r.text);
+      sendmail(obj.to,obj.subject,obj.content,res);
+  }
+  
+  if(!rrp(r.path))
   {
     retres("Failed to write to" +hh+ r.path,res);
     return false;
   }
-else
+  else
   {
-
-    if(r.encoding==null)
-      r.encoding="utf8";
-    if(r.text==null) r.text="";
+    r.encoding=r.encoding || "utf8";
+    r.text=r.text || "";
 
     var fbuff=Array.from(iconv.encode(r.text,r.encoding));
   
     writeallbytes(rrp(r.path),fbuff)
     retres("Successfully written"+hh+r.path,res);
   
-
-  } //else encoding!=mem
+  }  //  else encoding!=mem && r.path
 }
 else if(r.cmd==="app.MakeFolder")
 {
@@ -555,16 +551,11 @@ function writeallbytes(filen,barr)
     f.Close();
 }
 
-  
-
-(async ()=>{
-window.promConsole=new Promise(res=>{
-window.resConsole=res;
-});
-
-console.log("hey")
-alert(await window.promConsole)
 
 
-})
+
+
+
+
+
 
