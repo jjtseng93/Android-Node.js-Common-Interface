@@ -558,6 +558,37 @@ anci.branched_obj=[]
 
 anci.objchainoff=anci.DisableObjectChaining;
 
+anci.EvaluateCommand=(command_text)=>
+{
+  let t=command_text+'';
+	  
+  t=`(async ()=>{
+	  
+	  try{
+	  
+	    let temp_chain_status=(!!Object.prototype.c);
+	    !temp_chain_status && anci.objchainon();
+	    var csl=console.log,jss=JSON.stringify,jsp=JSON.parse;
+	  
+	    ${t}
+	  
+	    !temp_chain_status && anci.objchainoff();	    
+	  
+	  
+	  }catch(e){
+		console.log(e);
+	    alert2("Error from client:\\r\\n"+e+"\\r\\n"+e.stack,null,true);
+	  }
+	  
+      })()`;
+  
+  eval(t);
+  
+
+}
+
+anci.eval=anci.EvaluateCommand;
+
 {  //  GUI
 
 anci.ShowProgress=function(msg)
@@ -589,7 +620,7 @@ anci.toast=anci.ShowPopup;
 
 
 alert2=async (msg,textAsHtml,focus_ok)=>{
-  if(msg && msg.constructor==Object)
+  if(msg && (msg.constructor==Object || msg.constructor==Array))
     msg=JSON.stringify(msg,null,1);
   
   msg+="";
