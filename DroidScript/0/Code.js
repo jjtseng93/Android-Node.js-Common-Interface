@@ -57,13 +57,9 @@ gbcache.applist=await anci.ListFolder('/sdcard/napps');
 
 }
 
-async function runCode()
+function runCode()
 {
-try{
-
-eval($("#jstest").val());
-}catch(e){alert("Error from client:"+crlf+e+crlf+e.stack);}
-
+  anci.eval(jstest.value);
 }
 
 function runSelectedApp()

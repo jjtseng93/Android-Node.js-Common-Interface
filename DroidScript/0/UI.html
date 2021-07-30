@@ -28,12 +28,15 @@ background-color:lightGray;
 
 </style>
 
-Testing code 測試程式碼<br>
+Testing code 測試程式碼 <button onclick="alert2(`設定好了一個非同步的環境, 並且物件鏈鎖打開, 可以使用縮寫 jss, jsp, csl
+有錯誤會跳alert2
+
+Async context set up, object chaining on, jss, jsp, csl are available shorthands
+Errors will be printed by alert2`)">注意 Cautions</button>
+<br>
 
 <!-- onkeyup attached in Code.js -->
 <textarea id="jstest" rows="15">
-(async ()=>{
-
 //Reading sentences
 //朗讀句子：
   var s="I am very clever, 我很聰明";
@@ -41,9 +44,7 @@ Testing code 測試程式碼<br>
 
 //List the functions of ANCI
 //列出ANCI的函式縮寫
-  await alert2(anci.getdoca());
-
-
+  await alert2(anci.doca);
 
 //  Read file
 //  讀取檔案
@@ -57,14 +58,17 @@ Testing code 測試程式碼<br>
 Run the code inside this box using F2 or the symbol "~"
 在這個文字框按F2或是~都可以執行裏面的文字
 
+get anci.doca: anci.getdoca()
+get anci.doc: anci.getdoc()
+async get / set anci.cb: anci.get/setcb()
+
 */
 
-})()
 </textarea>
 
 <br><br>
 
-<span onclick="runCode();" oncontextmenu="alert('Run the text above as javascript')">
+<span onclick="anci.eval(jstest.value);" oncontextmenu="alert('Run the text above as javascript')">
   <i class="far fa-play-circle fa-3x"></i>
 </span>&nbsp;&nbsp;
 

@@ -13,7 +13,7 @@ anci={droidscript_resolves:{},alert2_resolves:{},showlist_resolves:{}};
 
 {  //  Node API
 
-{  //  Network 
+{  //  Network
 
 anci.DownloadFile=(url,file_path,headers,method)=>
 {
@@ -23,12 +23,12 @@ anci.DownloadFile=(url,file_path,headers,method)=>
       headers=JSON.parse(headers);
     }catch(e){headers={};}
   }
-  
+
   var sobj={"cmd":"downloadfile",
                 url,headers,
                 "path":file_path,
                 "method":(method || "GET")};
-				
+
   return nodeapi(JSON.stringify(sobj),"pm");
 }
 
@@ -46,9 +46,9 @@ anci.HttpRequest=(method_optional,url,encoding,data,headers)=>
     try{
       headers=JSON.parse(headers);
     }catch(e){headers={};}
-	
+
   let tmpm=	(method_optional+"").toLowerCase().trim();
-  if(!("head,get,post,put,delete,connect,options,trace,patch").split(",").includes(tmpm)) 
+  if(!("head,get,post,put,delete,connect,options,trace,patch").split(",").includes(tmpm))
   {
 	  headers=data
 	  data=encoding
@@ -79,7 +79,7 @@ anci.BrowserUploadFile=(overwrite)=>
 {
 	if(!["true","false"].includes(overwrite+''))
 	    overwrite="pm";
-	
+
 return new Promise(resolve=>{
 browser_file_select_dialog.onchange=function()
   {
@@ -134,7 +134,7 @@ anci.WriteFileInBytes=function(filePath,byteArray)
   var sobj={"cmd":"app.WriteFileInBytes",
                 "path":filePath,
                 byteArray };
-				
+
   return nodeapi(JSON.stringify(sobj),"pm");
 };
 
@@ -147,7 +147,7 @@ anci.ReadFile=function(filePath,textEncoding)
     var sobj={"cmd":"app.ReadFile",
                 "path":filePath+'',
                 "encoding":textEncoding };
-				
+
     return nodeapi(JSON.stringify(sobj),"pm");
 };
 
@@ -257,17 +257,16 @@ try
     return JSON.parse(lsd);
 }
 catch(e){alert(e.stack)}
-	
+
   return [];
 }
 
 anci.ls=anci.ListFolder;
 
-anci.ChooseFile=async (default_folders,manually_enter)=>
+anci.ChooseFile=async (default_folders,multi_select)=>
 {
 var deflist=["/sdcard"];
-if(manually_enter)
-	deflist.unshift("手動輸入... Manually enter...");
+deflist.unshift("<<手動輸入... Manually enter...>>");
 
 if(typeof(default_folders)=="string" && default_folders)
 {
@@ -281,15 +280,20 @@ else if(default_folders && default_folders.constructor==Array)
 var selected_file = await anci.showlist("選擇檔案 Select a file",deflist);
 
 var file_selected=async (selected_file)=>{
-	
+
 if(!selected_file) return "";
 
 selected_file+="";
+if(selected_file.startsWith("<span"))
+{
+  selected_file=$(selected_file).data("path");
+}
+
 var special_selection=selected_file.substr(0,3);
 
 if(special_selection=="無項目")
 	return "";
-else if(special_selection=="手動輸")
+else if(special_selection=="<<手")
 	return file_selected(await prompt("輸入檔案路徑 Enter file path"));
 
 if(await anci.hasf(selected_file))
@@ -299,21 +303,67 @@ else if(await anci.hasd(selected_file))
 	if(selected_file.slice(-1)=="/")
 		selected_file=selected_file.slice(0,-1);
 	let parentFolder=selected_file.substr(0,selected_file.lastIndexOf("/")+1);
-	let listArray=[parentFolder,...(await anci.ls(selected_file))];
-	listArray.sort();
-	let sel2=await anci.showlist("選擇檔案 Select a file",listArray);
+
+    let icon=i=>
+    {
+      i=(i+'').toLowerCase();
+      if(!i.includes("."))
+        return anci.faicon`r,folder-open`;
+      else if([".jpg",".jpeg",".bmp",".png",".tiff",".tif",".eps",".ai",".psd",".xcf",".cdr",".raw",".cr2",".nef",".orf",".sr2","webp"].some(ii=>i.endsWith(ii)))
+        return anci.faicon`r,image`;
+      else if([".mp4",".wmv",".3gp",".flv",".avi",".gif",".mov",".mkv",".avchd",".webm",".mpg"].some(ii=>i.endsWith(ii)))
+        return anci.faicon`s,file-video`;
+      else if([".mp3",".wav",".mid",".midi",".flac",".amr",".ape",".wv",".m4a",".pcm",".au",".aiff",".bwf",".aac",".ogg"].some(ii=>i.endsWith(ii)))
+        return anci.faicon`s,file-audio`;
+      else if([".txt",".doc",".docx",".rtf",".json"].some(ii=>i.endsWith(ii)))
+        return anci.faicon`s,file-word`;
+      else if(i.endsWith(".html") || i.endsWith(".htm"))
+        return anci.faicon`b,chrome`;
+      else if(i.endsWith(".js"))
+        return anci.faicon`s,file-code`;
+      else
+        return "";
+    };
+
+	let listArray = await anci.ls(selected_file);
+	listArray.sort((a,b)=>
+	{
+		a+='',b+='';
+	    if(a.includes(".")^b.includes("."))
+		  return a.includes(".")?1:-1;
+	    return a>b?1:-1;
+	});
+	
+	anci.multi_files=new Set;
+	
+	listArray=listArray.map(i=>`<span data-path="${i}">${!multi_select?"":`<input type="checkbox" onclick="event.stopPropagation();" 
+	                               onchange="let d=$(this).parent().data('path');this.checked?anci.multi_files.add(d):anci.multi_files.delete(d);">`} ${icon(i)} ${anci.ttoh(i)}</span>`);
+	
+	multi_select && listArray.unshift(`<span data-path="&quot;multi_files&quot;">
+	                                    選擇以下多個 Select Multiple Files Below<textarea style="display:none;">"multi_files"</textarea>
+									   </span>`);
+    
+    listArray.unshift(`<span data-path="${parentFolder}">${anci.faicon("r,folder-open")}.. 上一層 Parent</span>`);
+	let sel2=await anci.showlist(selected_file,listArray,true);
 	if(!sel2) return "";
 	
+    sel2+='';
+
+    if(sel2.startsWith("<span"))
+      sel2=$(sel2).data("path");
+  
+    if(sel2==`"multi_files"`) return [...anci.multi_files].map(i=>(selected_file+"/"+i));
+
 	if(sel2!=parentFolder)
 		selected_file+="/"+sel2;
 	else
 		selected_file=parentFolder;
-	
+
 	//alert(selected_file);
 	return await file_selected(selected_file);
 }
 
-	
+
 
 };
 
@@ -335,7 +385,7 @@ anci.SetClipboardText=async function(txt)
     window.clipboardData.setData("Text", txt);
     return "Successfully set to clipboard: " + txt;
   }
-  
+
   obj=document.createElement("textarea");
 
   obj.value=txt;
@@ -347,7 +397,7 @@ anci.SetClipboardText=async function(txt)
   document.execCommand("copy");
 
   obj.remove();
-  
+
   return "Successfully set to clipboard: " + txt;
 
 };
@@ -363,7 +413,7 @@ anci.GetDisplayHeight=function()
  {
  return window.innerHeight;
  };
- 
+
 
 }  //  Node API End
 
@@ -519,7 +569,7 @@ anci.branched_obj=[]
 
 Object.prototype.c=function(func,spread)
 {
-  if(typeof(func)=="function") 
+  if(typeof(func)=="function")
   {
     if(spread)
       return func(...this);
@@ -561,35 +611,44 @@ anci.objchainoff=anci.DisableObjectChaining;
 anci.EvaluateCommand=(command_text)=>
 {
   let t=command_text+'';
-	  
+
   t=`(async ()=>{
-	  
+
 	  try{
-	  
+
 	    let temp_chain_status=(!!Object.prototype.c);
 	    !temp_chain_status && anci.objchainon();
 	    var csl=console.log,jss=JSON.stringify,jsp=JSON.parse;
-	  
+
 	    ${t}
-	  
-	    !temp_chain_status && anci.objchainoff();	    
-	  
-	  
+
+	    !temp_chain_status && anci.objchainoff();
+
+
 	  }catch(e){
 		console.log(e);
 	    alert2("Error from client:\\r\\n"+e+"\\r\\n"+e.stack,null,true);
 	  }
-	  
+
       })()`;
-  
+
   eval(t);
-  
+
 
 }
 
 anci.eval=anci.EvaluateCommand;
 
 {  //  GUI
+
+anci.FontAwesomeIcon=(iconstr)=>
+{
+  iconstr=(iconstr || "r,folder-open")+'';
+  let [t,n]=iconstr.split(",");
+  return `<i class="fa${t} fa-${n}"></i>`;
+}
+
+anci.faicon=anci.FontAwesomeIcon;
 
 anci.ShowProgress=function(msg)
 {
@@ -622,12 +681,12 @@ anci.toast=anci.ShowPopup;
 alert2=async (msg,textAsHtml,focus_ok)=>{
   if(msg && (msg.constructor==Object || msg.constructor==Array))
     msg=JSON.stringify(msg,null,1);
-  
+
   msg+="";
 
-  var uniqueID=anci.rndtime();  
-  
-  
+  var uniqueID=anci.rndtime();
+
+
   var dlg=$(`<div>
 </div>
 `)
@@ -644,66 +703,93 @@ alert2=async (msg,textAsHtml,focus_ok)=>{
           .css("padding","10px")
           .css("overflow","auto")
           .attr("onclick",`$(this).remove();anci.alert2_resolves[${uniqueID}]();delete anci.alert2_resolves[${uniqueID}];`);
-		  
+
   if(textAsHtml)
     dlg.html(msg);
   else
     dlg[0].innerText=(msg);
 
   dlg.append(`<div class="text-center"><button onclick="anci.alert2_resolves[${uniqueID}]($(this).parent().parent().find('textarea').val());">OK</button></div>`);
-  
+
   $("body").append(dlg);
-  
+
   if(focus_ok)
     dlg.find("button").last().focus();
-  
+
   return await new Promise(resolve=>{
-	  anci.alert2_resolves[uniqueID]=resolve;
+	  anci.alert2_resolves[uniqueID]=r=>resolve(r);
   });
-  
+
 };
 
 anci.Prompt=async (msg,default_value,textAsHtml)=>
 {
-  msg=(msg || document.title)+""; 
+  msg=(msg || document.title)+"";
   return await alert2(`${textAsHtml?msg:anci.ttoh(msg)}<br><textarea style="width:100%;height:70%" onclick="event.stopPropagation();">${default_value || ""}</textarea>`,true)
 }
-  
-prompt=anci.Prompt;  
-  
-anci.showlist=async (title_optional,list,listAsHtml)=>{
+
+prompt=anci.Prompt;
+
+anci.showlist=async (title_optional,list,listAsHtml,multi_select)=>{
   if(!list || typeof(list)=='boolean')
   {
+	  multi_select=listAsHtml;
 	  listAsHtml=list;
 	  list=title_optional;
 	  title_optional=document.title;
   }
-  
+
   if(typeof(list)=="string")
     {
       list=list.split(",");
     }
 
   if(!list) list=["無項目 No Items"];
-  
+
   var uniqueID=anci.rndtime();
 
-  return (await new Promise(resolve=>{
+  return (await new Promise(async (resolve)=>{
 
   anci.showlist_resolves[uniqueID]=resolve;
+  
+  anci.multi_items=new Set;
 
-  alert2(`<h3 class="alert alert-success text-center">
-${title_optional}</h3>
-\n`+
-  `<ul class="list-group">\n`+
-  `
-<li class="list-group-item list-group-item-danger text-center" onclick="anci.showlist_resolves[${uniqueID}]('');delete anci.showlist_resolves[${uniqueID}];">取消Cancel</li>
-`+
+  let result=await alert2(`
+<h3 class="alert alert-success text-center">
+  ${title_optional}
+</h3>
+<ul class="list-group">
+  <li 
+  class="list-group-item list-group-item-danger text-center" 
+  onclick="anci.showlist_resolves[${uniqueID}]('');delete anci.showlist_resolves[${uniqueID}];">
+    取消Cancel
+  ${!multi_select?"":`
+  <textarea style="display:none;">"multi_items"</textarea>
+  `}
+  </li>`+
   list.map((i,ind)=>(`
-<li class="list-group-item list-group-item-info" onclick="var res=new String(anci.b64d('${anci.b64e(i)}'));res.index=${ind};anci.showlist_resolves[${uniqueID}](res);delete anci.showlist_resolves[${uniqueID}];">${listAsHtml?i:anci.ttoh(i)}</li>
+  <li 
+  class="list-group-item list-group-item-info"
+  onclick="var res=new String(anci.b64d('${anci.b64e(i)}'));res.index=${ind};anci.showlist_resolves[${uniqueID}](res);delete anci.showlist_resolves[${uniqueID}];">
+  ${
+  !multi_select?"":`
+  <input type="checkbox" 
+  onclick="event.stopPropagation();" 
+  onchange="let d=anci.b64d('${anci.b64e(i)}');this.checked?anci.multi_items.add(d):anci.multi_items.delete(d);">
+  `
+  }
+    ${listAsHtml?i:anci.ttoh(i)}
+  </li>
 `)).join("\n")+
-  `</ul>
-`,true);
+  `
+</ul>`,true);
+
+if(result==`"multi_items"`) 
+    resolve([...anci.multi_items]);
+else if(result)
+    resolve(result);
+else
+	resolve("");
 
   })); //new Promise
 };
@@ -749,7 +835,7 @@ let base64DecodeChars = new Array(
 
 anci.Base64ToBarr=(str)=>{
 	str+="";
-	
+
     var cbyte=0;
     var c1, c2, c3, c4;
     var i, len, out;
@@ -890,7 +976,7 @@ anci.htot=anci.HtmlToText;
 anci.Sleep=(milliSeconds)=>
 {
 	$.isNumeric(milliSeconds) && (milliSeconds-=0);
-	
+
     return new Promise(resolve=>{
     setTimeout(resolve,milliSeconds);
 	});
@@ -945,10 +1031,6 @@ anci.Timer=function(action_function,interval_msec)
 ge=(elementID)=>document.getElementById(elementID);
 
 }  //  Common libraries End
-
-
-
-
 
 
 
