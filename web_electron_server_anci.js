@@ -532,7 +532,7 @@ if(r.cmd==="app.ReadFile")
   if(r.encoding=="mem")
   {
     csl("Read From Memory:"+hh+r.path);
-    retres(gbcache[r.path] ?? "",res);
+    retres( gbcache[r.path] != null ? gbcache[r.path] : "" ,res);
     return true;
   }  //  if encoding==mem
 
@@ -568,7 +568,7 @@ else if(r.cmd==="app.WriteFile")
   if(r.encoding=="mem")
   {
     csl("Written to memory:"+hh+r.path);
-    gbcache[r.path]=r.text ?? "";
+    gbcache[r.path] = r.text != null ? r.text : "";
     retres("Written to memory:"+hh+r.path,res);
     return true;
   }
