@@ -263,8 +263,26 @@ catch(e){alert(e.stack)}
 
 anci.ls=anci.ListFolder;
 
+anci.GetFileState=async function(filePath)
+{
+  var sobj={"cmd":"app.GetFileState",
+                "path":filePath+'' };
+  let stat=await nodeapi(JSON.stringify(sobj),"pm");
+  try{
+	  stat=JSON.parse(stat);
+  }catch(e){
+	  stat="Failed to GetFileState of "+filePath+"\r\n"+stat;
+  }
+  
+  return stat;
+  
+};
+
+anci.stat=anci.GetFileState;
+
 anci.ChooseFile=async (default_folders,multi_select)=>
 {
+
 var deflist=["/sdcard"];
 deflist.unshift("<<手動輸入... Manually enter...>>");
 
@@ -278,6 +296,8 @@ else if(default_folders && default_folders.constructor==Array)
 }
 
 var selected_file = await anci.showlist("選擇檔案 Select a file",deflist);
+
+if(platform!="android"){
 
 var file_selected=async (selected_file)=>{
 
@@ -370,9 +390,22 @@ else if(await anci.hasd(selected_file))
 return await file_selected(selected_file);
 
 }
+else  //  platform == "android"
+  {
+	if(selected_file.startsWith("<<手"))
+		selected_file=await prompt("請輸入資料夾 Please enter directory name");
+    var sobj={"cmd":"app.ChooseFile",
+                "folder":selected_file };
+    return await nodeapi(JSON.stringify(sobj),"pm");
+  }
+
+}
 
 anci.selectf=anci.ChooseFile;
 
+anci.filemtime=async (filePath)=>{return await anci.GetFileDate(filePath);};
+
+anci.filesize=async (filePath)=>{return await anci.GetFileSize(filePath);};
 
 }  //  File system operations End
 

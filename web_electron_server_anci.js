@@ -45,6 +45,7 @@ var http = require("http");
 var url = require("url");
 var fs=require("fs");  // file system
   var fse=require("fs-extra");
+  var fsp=fs.promises;
 var express=require("express");
 var app=express();
 fetch=require("node-fetch");
@@ -767,6 +768,12 @@ fs.readdir(global.joinp(rrp(r.path)),(err,files)=>
     if(err) {retres("Failed",res);return false;}
     retres(JSON.stringify(files),res);
   });
+}
+else if(r.cmd==="app.GetFileState")
+{
+  r.path=global.joinp(rrp(r.path));
+  retres(jss(await fsp.stat(r.path)),res);
+  return 0;
 }
    //xhpost(r.url,r.data,cbf,r.method,"1",r.hhead);
 else if(r.cmd==="app.xhr" || r.cmd=="downloadfile")

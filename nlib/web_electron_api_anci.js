@@ -293,6 +293,10 @@ cbf(fext);
 
 anci.openf=anci.OpenFile;
 
+anci.GetFileDate=async (filePath)=>{return new Date((await anci.GetFileState(filePath)).mtime);};
+
+anci.GetFileSize=async (filePath)=>{return ((await anci.GetFileState(filePath)).size);};
+
 anci.TextToSpeech=function( rtext,rpitch,rrate)
 {
 try{

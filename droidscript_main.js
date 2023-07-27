@@ -128,7 +128,9 @@ var simple_functions=["GetClipboardText",
 					  "SetSharedApp",
 					  "GetSharedText",
 					  "GetSharedFiles",
-					  "DisableKeys"];
+					  "DisableKeys",
+		              "GetFileSize",
+		              "GetFileDate"];
 
 try{
 
@@ -198,6 +200,10 @@ else if(r.cmd==="OpenFile")
     retres("Error, file doesn't exist or not allowed!",res);
   else
     retres(app.OpenFile(rrp(r.param)),res)
+}
+else if(r.cmd==="app.ChooseFile")
+{
+	app.ChooseFile("請選擇檔案 Please choose a file",null,r=>retres(r,res),rrp(r.folder)||null);
 }
 else if(r.cmd==="app.TextToSpeech")
 {
@@ -528,8 +534,12 @@ function rrp(istr)
       return "";
     }
     	
-
-    return ("/"+istr).replace("/sdcard","/storage/emulated/0");
+    istr="/"+istr;
+	
+	if(istr.startsWith("/sdcard/DroidScript/") || istr=="/sdcard/DroidScript")
+		istr=istr.replace("DroidScript","Android/data/com.smartphoneremote.androidscriptfree/files/DroidScript");
+	
+    return istr.replace(/^\/sdcard/,"/storage/emulated/0");
   } // function rrp
   
 
