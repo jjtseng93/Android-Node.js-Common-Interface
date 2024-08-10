@@ -95,12 +95,29 @@ anci.remoteapp=anci.RunRemoteApp;
 let saveToFile=saveAs;
 delete saveAs;
 
-anci.BrowserDownloadFile=(not_supported_function)=>
-{
-  var s="Not supported in DroidScript webview"; 
-  console.log(s);
-  return s;
-}
+anci.BrowserDownloadFile=async (b64_or_arr,file_name)=>
+    {
+      if(typeof(b64_or_arr)=="string")
+        var barr = Array
+                          .from(anci.b64arr(b64_or_arr));
+      else
+        var barr = Array.from(b64_or_arr);
+      
+      if( file_name.lastIndexOf(".") == -1 )
+          file_name+='.txt';
+
+      while(await anci.hasf('/sdcard/Download/'+
+                                            file_name)      )
+      {
+        let pos = file_name.lastIndexOf(".");
+        file_name=file_name.substr(0,pos)+"_1"+
+                            file_name.substr(pos)
+      }
+      let fullp='/sdcard/Download/'+
+                                            file_name;
+
+      return await anci.wfb(fullp,barr);
+    }
 
 anci.bdlf=anci.BrowserDownloadFile;
 
