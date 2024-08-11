@@ -153,6 +153,12 @@ if(r.cmd==="app.ReadFile")
   }
   else
   {
+    let rrpath = rrp(r.path);
+    if( rrpath.startsWith('/android_asset/') )
+    {
+      retres( app.ReadFile(rrpath,r.encoding) , res );
+      return true;
+    }
     var data=readallbytes(rrp(r.path));
     if(!data)
     {
@@ -440,14 +446,34 @@ else if(r.cmd===("app.FolderExists"))
 }
 else if(r.cmd==="app.ListFolder")
 {
-if(!dexists(rrp(r.path)))
- {
- retres("Failed to list:"+hh+r.path,res);
- return false;
- }
-    var files=app.ListFolder(rrp(r.path))
-    retres(JSON.stringify(files),res);
+let p=rrp(r.path);
 
+//alert(p);
+if(!dexists(p)   )
+ {
+   retres("Failed to list:"+hh+r.path,res);
+   return false;
+ }
+    //alert(app.RealPath(p))
+    
+    let files=app.ListFolder(p);
+    if(files && files.length>0)
+      retres(JSON.stringify(files),res);
+    else
+    {
+      files=app.WalkFolder(p,null,1)
+      if(files)
+      {
+        files=files[  Object.keys(files)[0]  ];
+        files=files.map(i=>i.name);
+        retres(JSON.stringify(files),res);
+      }
+      else
+      {
+        retres("Failed to list:"+hh+r.path,res);
+        return false;
+      }
+    }
 }
    //xhpost(r.url,r.data,cbf,r.method,"1",r.hhead);
 else if(r.cmd==="app.xhr" || r.cmd=="downloadfile")
@@ -507,7 +533,8 @@ retres("已處理:" +hh+jss(r),res);
 
 
 function rrp(istr)
-  {
+{
+    try{
     if(istr==null || typeof(istr)!="string") return "";
     istr=istr.replace(/\\/g,"/");
  
@@ -525,22 +552,85 @@ function rrp(istr)
     {
       istr=istr.substr(0,istr.length-1);
     }
-    if(!istr.startsWith("sdcard/") && istr!="sdcard" && !istr.startsWith("Assets")) return "";
-    //if(istr.indexOf("/")===-1 && istr!=="sdcard") return "";
-    var tarr=istr.split("/");
+    //  ↑確保路徑為 aaa/bbb/ccc
+    
+    
+    let tarr=istr.split("/");
     for(let i of tarr)
     {
       if(i=="." || i=="..")
       return "";
     }
-    	
-    istr="/"+istr;
-	
-	if(istr.startsWith("/sdcard/DroidScript/") || istr=="/sdcard/DroidScript")
-		istr=istr.replace("DroidScript","Android/data/com.smartphoneremote.androidscriptfree/files/DroidScript");
-	
-    return istr.replace(/^\/sdcard/,"/storage/emulated/0");
-  } // function rrp
+    //  ↑確保沒有上一層指示符夾雜
+    
+    
+    let patt=[  ( /^sdcard[\/]/g ) , ( /^sdcard$/g ) ,
+                       ( /^sd[\/]/g ) , ( /^sd$/g ) ,
+                       ( /^bin[\/]/g ) , ( /^bin$/g ) ,
+                       ( /^apps[\/]/g ) , ( /^apps$/g ) ,
+                       ( /^~[\/]/g ) , ( /^~$/g ) ,
+                       ( /^android_asset[\/]/g ) , ( /^android_asset$/g ) ,
+                       ( /^private[\/]/g ) , ( /^private$/g ) ,
+                       ( /^home[\/]/g ) , ( /^home$/g ) ,
+                       ( /^Internal[\/]/g ) , ( /^Internal$/g ) ,
+                    ];
+                    
+    let iistr='/'+istr;
+    let pv = app.GetPrivateFolder().replace('/files','');
+    if(  iistr.startsWith(pv+'/') || 
+          iistr==pv   ) 
+      return iistr;
+    
+    if( istr=='private' || istr.startsWith('private/') )
+      return iistr.replace('/private',pv);
+    
+    
+    let retnull=true;
+    
+    for(let i of patt)
+      if( istr.match(i) ) retnull=false;
+      
+    if(retnull) return "";
+
+    let nd='/sdcard/ndata'; let nnd='/sd/ndata';
+    let na='/sdcard/napps'; let nna='/sd/napps';
+    app.MakeFolder(nd);
+    app.MakeFolder(na);
+    if( iistr == nd || iistr.startsWith( nd+'/' ) )
+      return iistr;
+    if( iistr == nnd || iistr.startsWith( nnd+'/' ) )
+      return iistr.replace('/sd/','/sdcard/') ;
+    if( iistr == na || iistr.startsWith( na+'/' ) )
+      return iistr;
+    if( iistr == nna || iistr.startsWith( nna+'/' ) )
+      return iistr.replace('/sd/','/sdcard/') ;
+    if( istr=="~" || istr.startsWith("~/") )
+      return iistr.replace('/~',nd);
+    if( istr=='home' || istr.startsWith('home/'))
+      return iistr.replace('/home',nd);
+      
+      
+    if(  istr.match(patt[0]) || istr.match(patt[1])  )
+      return ("/"+istr).replace("/sdcard","/storage/emulated/0");
+    else if(  istr.match(patt[2]) || istr.match(patt[3])  )
+      return ("/"+istr).replace("/sd","/storage/emulated/0");
+    else if(  istr.match(patt[16]) || istr.match(patt[17])  )
+      return ("/"+istr).replace("/Internal","/storage/emulated/0");
+    else if(  istr.match(patt[10])  )
+      return iistr;
+    else if(  istr.match(patt[11])  )
+      return iistr+'/';
+    else if(  istr.match(patt[5]) || istr.match(patt[7])  )
+      return na;
+    else if(  istr.match(patt[4]) || istr.match(patt[6])  )
+      return na+istr.substr(istr.indexOf('/'));
+    else
+      return "";
+    }catch(e)
+    {
+      alert(e.stack)
+    }
+} // function rrp
   
 
 function readallbytes(filen)
