@@ -95,16 +95,16 @@ browser_file_select_dialog.onchange=function()
               {
                 if(s=='false')
                   {
-                    while(await anci.FileExists("/sdcard/"+res.fname))
+                    while(await anci.FileExists("/sdcard/Download/"+res.fname))
                       {
                         var tind=res.fname.lastIndexOf(".");
                         if(tind===-1)
                           res.fname+="-new";
                         else
-                          res.fname=res.fname.substr(0,tind)+"-new"+res.fname.substr(tind);
+                          res.fname=res.fname.substr(0,tind)+"_1"+res.fname.substr(tind);
                       }
                   }
-                resolve(await anci.WriteFile("/sdcard/"+res.fname,res,"base64"));
+                resolve(await anci.WriteFile("/sdcard/Download/"+res.fname,res,"base64"));
               };
           }
 
