@@ -28,7 +28,25 @@ background-color:lightGray;
 
 </style>
 
-Testing code 測試程式碼 <button onclick="alert2(`設定好了一個非同步的環境, 並且物件鏈鎖打開, 可以使用縮寫 jss, jsp, csl
+Code
+
+<button onclick="
+      if(!sind.tarr) sind.tarr=[];
+      let t=sind.innerText;
+      sind.tarr[t-1]=jstest.value;
+      t=(t-1)==0?50:(t-1);
+      jstest.value=sind.tarr[t-1];
+      sind.innerText=t;" style="">←</button>
+<span id="sind">1</span>/50
+<button onclick="
+      if(!sind.tarr) sind.tarr=[];
+      let t=sind.innerText;
+      sind.tarr[t-1]=jstest.value;
+      t=(t- -1)==51?1:(t- -1);
+      jstest.value=sind.tarr[t-1];
+      sind.innerText=t;" style="">→</button>
+
+<button onclick="alert2(`設定好了一個非同步的環境, 並且物件鏈鎖打開, 可以使用縮寫 jss, jsp, csl
 有錯誤會跳alert2
 
 Async context set up, object chaining on, jss, jsp, csl are available shorthands
