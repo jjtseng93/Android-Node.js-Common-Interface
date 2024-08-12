@@ -150,7 +150,7 @@ async function lsr(path, get_date_size)
 {
   if(path.slice(-1)=="/")
     path=path.slice(0,-1);
-  let farr=await app.ListFolder(path)
+  let farr=await ls(path);
   farr=farr.map(i=>path+"/"+i)
   for(let ind=0;ind<farr.length;ind++)
   {
