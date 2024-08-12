@@ -244,9 +244,9 @@ anci.FolderExists=(folderPath)=>anci.FileExists(folderPath,true);
 
 anci.hasd=anci.FolderExists;
 
-anci.ListFolder=async (folderPath)=>
+anci.ListFolder=async (folderPath,recursive)=>
 {
-  var sobj={"cmd":"app.ListFolder",
+  var sobj={"cmd":"app.ListFolder", recursive,
                 "path":folderPath+'' };
 
 try
@@ -262,6 +262,10 @@ catch(e){alert(e.stack)}
 }
 
 anci.ls=anci.ListFolder;
+
+anci.ListFolderRecursive=(folderPath)=>anci.ls(folderPath,true);
+anci.lsr=anci.ListFolderRecursive;
+
 
 anci.GetFileState=async function(filePath)
 {
@@ -1031,6 +1035,77 @@ anci.WaitForValue=async (obj,key,value,milliSeconds)=>{
 }
 
 anci.waitv=anci.WaitForValue;
+
+anci.SaveValue = async (...i)=>
+    {
+      if(i.length==1)
+        [ key_name, value, database_file ] =
+          [ null, i[0], 'default_db' ];
+      else if(i.length==2)
+        [ key_name, value, database_file ] =
+          [ i[0], i[1], 'default_db' ];
+      else if(i.length==3)
+        [ key_name, value, database_file ] = i ;
+       
+      key_name+=""; 
+      let appd="/home/"+(await anci.appn);
+      if( ! await anci.hasd(appd) ) 
+        await anci.mkdir(appd);
+      database_file = appd +
+          "/" + database_file + ".txt";
+      if( await anci.hasf(database_file) )
+      {
+        try{
+        var obj=JSON
+              .parse( await anci.rf(database_file) );
+        }catch(e){ var obj={}; }
+      }
+      else
+        var obj={};
+
+      obj[ key_name ] = value;
+      try{
+      var ret=await anci.wf( database_file, 
+                                             JSON.stringify(obj) );
+      }catch(e){  var ret=e.stack;  }
+      return ret;
+    };
+anci.savev=anci.SaveValue;
+
+anci.LoadValue = async (optional_key_name,
+                             optional_defvalue,
+                             optional_database_file)=>
+    {
+      if(optional_key_name==null)
+        optional_key_name='null';
+      if(optional_defvalue==null)
+        optional_defvalue="";
+      if(!optional_database_file)
+        optional_database_file='default_db';
+
+      optional_key_name+=""; 
+      let appd="/home/"+(await anci.appn);
+      if( ! await anci.hasd(appd) ) 
+        await anci.mkdir(appd);
+
+      let database_file = appd +
+          "/" + optional_database_file + ".txt";
+      if( await anci.hasf(database_file) )
+      {
+        try{
+        var obj=JSON
+              .parse( await anci.rf(database_file) );
+        }catch(e){ var obj={}; }
+      }
+      else
+        var obj={};
+      
+      let ret=obj[ optional_key_name ];
+      if(ret==null) ret=optional_defvalue;
+
+      return ret;
+    };
+anci.loadv=anci.LoadValue;
 
 anci.RandomTimestamp=()=>
 {
