@@ -244,9 +244,9 @@ anci.FolderExists=(folderPath)=>anci.FileExists(folderPath,true);
 
 anci.hasd=anci.FolderExists;
 
-anci.ListFolder=async (folderPath)=>
+anci.ListFolder=async (folderPath,recursive)=>
 {
-  var sobj={"cmd":"app.ListFolder",
+  var sobj={"cmd":"app.ListFolder", recursive,
                 "path":folderPath+'' };
 
 try
@@ -262,6 +262,10 @@ catch(e){alert(e.stack)}
 }
 
 anci.ls=anci.ListFolder;
+
+anci.ListFolderRecursive=(folderPath)=>anci.ls(folderPath,true);
+anci.lsr=anci.ListFolderRecursive;
+	
 
 anci.ChooseFile=async (default_folders,multi_select)=>
 {
