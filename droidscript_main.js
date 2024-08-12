@@ -117,7 +117,71 @@ function retres(str,func,spread_array)
 	  web.Execute(`${func}(${tic+str+tic})`);
 }
 
-function EvaluateAppCommand(r,res)
+function ls(p,debug)
+{
+
+  if(!dexists(p)   )
+  {
+    return ( "Failed to list:"+hh+p );
+  }
+  if(debug)
+    alert(app.RealPath(p));
+    
+    let files=app.ListFolder(p);
+    if(files && files.length>0)
+      return ( (files) );
+    else
+    {
+      files=app.WalkFolder(p,null,1)
+      if(files)
+      {
+        files=files[  Object.keys(files)[0]  ];
+        files=files.map(i=>i.name);
+        return ( (files) );
+      }
+      else
+      {
+        return ( "Failed to list:"+hh+p );
+      }
+    }
+}  //  function ls
+
+async function lsr(path, get_date_size)
+{
+  if(path.slice(-1)=="/")
+    path=path.slice(0,-1);
+  let farr=await app.ListFolder(path)
+  farr=farr.map(i=>path+"/"+i)
+  for(let ind=0;ind<farr.length;ind++)
+  {
+    web.Execute(` anci.showp( [${ind},${farr.length}] ) `);
+    if(ind%10==0)
+      await new Promise(  r=>setTimeout(r,1)  )  ;
+    let f=farr[ind] ;
+    if(await app.FolderExists(f))
+      {
+        farr.splice( ind, 1,
+                           ...await lsr(f,get_date_size)) ;
+        ind--;
+      }
+    else if( get_date_size && 
+                 await app.FileExists(f) )
+      {
+        if(typeof f == "string")
+          {
+            f=farr[ind]=new String(f)
+            
+            f.d=await app.GetFileDate(f)
+            f.s=await app.GetFileSize(f)
+            
+          }
+      }
+  }
+  web.Execute( `anci.hidep()` );
+  return farr.slice();
+};  //  function lsr
+
+async function EvaluateAppCommand(r,res)
 {
 var simple_functions=["GetClipboardText",
 					  "GetAppPath",
@@ -130,7 +194,8 @@ var simple_functions=["GetClipboardText",
 					  "GetSharedFiles",
 					  "DisableKeys",
 		              "GetFileSize",
-		              "GetFileDate"];
+		              "GetFileDate",
+		              "RealPath"];
 
 try{
 
@@ -446,34 +511,15 @@ else if(r.cmd===("app.FolderExists"))
 }
 else if(r.cmd==="app.ListFolder")
 {
-let p=rrp(r.path);
-
-//alert(p);
-if(!dexists(p)   )
- {
-   retres("Failed to list:"+hh+r.path,res);
-   return false;
- }
-    //alert(app.RealPath(p))
-    
-    let files=app.ListFolder(p);
-    if(files && files.length>0)
-      retres(JSON.stringify(files),res);
-    else
-    {
-      files=app.WalkFolder(p,null,1)
-      if(files)
-      {
-        files=files[  Object.keys(files)[0]  ];
-        files=files.map(i=>i.name);
-        retres(JSON.stringify(files),res);
-      }
-      else
-      {
-        retres("Failed to list:"+hh+r.path,res);
-        return false;
-      }
-    }
+  let p=rrp(r.path);
+  if(r.recursive)
+    var ret=await lsr(p);
+  else
+    var ret=ls(p);
+  if(typeof ret=='string')
+    retres( ret , res );
+  else
+    retres( jss(ret) , res );
 }
    //xhpost(r.url,r.data,cbf,r.method,"1",r.hhead);
 else if(r.cmd==="app.xhr" || r.cmd=="downloadfile")
