@@ -143,7 +143,8 @@ let fnarr=["GetClipboardText",
 		   "GetSharedFiles",
 		   "DisableKeys",
 		   "GetFileSize",
-		   "GetFileDate"];
+		   "GetFileDate",
+	           "RealPath"];
 for(let i of fnarr)
 	anci[i]=(...param)=>anci.GetByFunctionName(i,param);
 	
