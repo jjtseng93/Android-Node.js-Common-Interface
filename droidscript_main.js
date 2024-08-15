@@ -30,6 +30,8 @@ dexists=(d)=>
     else
       return false ;
   }
+  else if( d=='/android_asset' )
+    return true;
   else
     return app.FolderExists(d);
  }
@@ -152,7 +154,8 @@ function ls(p,debug)
   }
   if(debug)
     alert(app.RealPath(p));
-    
+
+    if(p=="/android_asset") p+='/';
     let files=app.ListFolder(p);
     if(files && files.length>0)
       return ( (files) );
