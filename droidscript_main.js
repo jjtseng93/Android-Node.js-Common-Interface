@@ -13,8 +13,34 @@ const csl=console.log;
 const jss=JSON.stringify;
 const jsp=JSON.parse;
 const hh="\r\n";
-dexists=app.FolderExists;
-fexists=app.FileExists;
+
+dexists=(d)=>
+{
+  d+='';
+  if(!d) return false;
+  if( d.startsWith('content://') )
+  {
+    let fp=d + '/file_for_testing_folder_existence.jpg' ;
+    app.WriteFile( fp , 'A' );
+    if( fexists(fp) )
+    {
+      app.DeleteFile(fp);
+      return true ;
+    }
+    else
+      return false ;
+  }
+  else
+    return app.FolderExists(d);
+ }
+fexists=(f)=>
+{
+  f+='';
+  if(f.startsWith('content://'))
+    return !!app.ReadFile(f) ;
+  else
+    return app.FileExists(f) ;
+}
 
 //  These 2 lines below makes DroidScript register your app to Android's share via menu when in APK 下面這兩行會讓DroidScript把你的APP註冊到安卓系統的分享選單(當你建立APK時)
 //  If your app doesn't want to receive shared data, remove these 2 lines 如果你的APP並不想接收分享的資料, 請移除這兩行
@@ -74,7 +100,7 @@ function OnStart()
 function OnData(isStartup)
 {
 if(!isStartup)
-	web.Execute("OnData()");
+	web.Execute("if(typeof OnData=='function') OnData()");
 }
 
 function web_OnConsole( consoleMsg )
@@ -181,6 +207,109 @@ async function lsr(path, get_date_size)
   return farr.slice();
 };  //  function lsr
 
+function rf(rpath,rencoding)
+{
+  var rrpath = rrp(rpath);
+  rencoding = rencoding || "utf8";
+
+  if(  !rrpath  &&  !rpath.startsWith('content://')  )
+  {
+    return "Failed to read:" +hh+ rpath ;
+  }
+  else  //  path valid
+  {
+  
+    if(  rpath.startsWith('content://')  )
+    {
+      return app.ReadFile(  rpath , rencoding ) ;
+    }
+    
+    if(  rrpath.startsWith('/android_asset/') )
+    {
+      return app.ReadFile( rrpath , rencoding ) ;
+    }
+    
+    var data = readallbytes( rrpath ) ;
+    if(!data)
+    {
+       return "Failed to read:" +hh+ rpath ;
+    }
+	
+    
+    return iconv.decode(  new Uint8Array(data) , rencoding  ) ;
+
+  }  //  else path valid
+
+}  //  function rf
+
+function wf(rpath, rtext, rencoding, test_existence)
+{
+  var rrpath = rrp( rpath ) ;
+  if(  !rrpath  &&  !rpath.startsWith('content://')  )
+  {
+    return "Failed to write to:" +hh+ rpath ;
+  }
+  else if(  rpath.startsWith('content://')  )
+  {
+    app.DeleteFile(rpath) ;
+    app.WriteFile( rpath, rtext, null, "UTF-8" ) ;
+    if( ! test_existence ) return 'Tried to write, results unkown:' + hh + rpath ;
+    if( fexists( rpath ) )
+      return 'Successfully written to:' + hh + rpath ;
+    else
+      return "Failed to write to:" +hh+ rpath ;
+  }
+  else
+  {
+    rencoding=rencoding || "utf8";
+    rtext = (rtext || "")+'' ;
+
+    var fbuff=Array.from(iconv.encode(rtext,rencoding));
+  
+    let ret=writeallbytes( rrpath , fbuff );
+    return ret ;
+  
+  }  //  else valid path
+}  //  function wf
+
+function mkdir( rpath )
+{
+  var failt="Failed to create"+hh+rpath ;
+  var rrpath=rrp(rpath);
+  if( rpath.startsWith('content://') )
+    rrpath=rpath;
+  
+  if(  rrpath == ""  )
+  {
+      return failt;
+  }
+  else if(  false && rpath.startsWith('content://')  )
+  {
+      app.MakeFolder( rpath );
+      return "Tried to create folder, results unknown:" + hh + rpath;
+  }
+  
+  var farr=rrpath.match(/(content:\/)*\/[^\/]+/g);
+  var fparr = farr.map( (i,ind) => farr.slice(0,ind+1).join('') );
+  for( var i=fparr.length-1; i>=0; i-- )
+  {
+    let item=fparr[i] ;
+    if( dexists( item ) ) break;
+  }
+  if( i==-1 ) return failt;
+  
+  for( ; i<fparr.length; i++)
+  {
+    let item=fparr[i] ;
+    app.MakeFolder( item );
+    if( !dexists( item ) ) return failt + hh + 'Failed at:' + hh + item;
+  }
+  
+  return "Successfully created"+hh+rpath ;
+  
+  return;
+}  //  function mkdir
+
 async function EvaluateAppCommand(r,res)
 {
 var simple_functions=["GetClipboardText",
@@ -200,6 +329,7 @@ var simple_functions=["GetClipboardText",
 try{
 
 r.cmd=r.cmd || "";
+var rrpath=rrp(r.path);
 console.log(r.cmd);
 
 if(r.cmd==="app.ReadFile")
@@ -211,31 +341,8 @@ if(r.cmd==="app.ReadFile")
     return true;
   }  //  if encoding==mem
 
-  if(!rrp(r.path))
-  {
-    retres("Failed to read" +hh+ r.path,res);
-    return false;
-  }
-  else
-  {
-    let rrpath = rrp(r.path);
-    if( rrpath.startsWith('/android_asset/') )
-    {
-      retres( app.ReadFile(rrpath,r.encoding) , res );
-      return true;
-    }
-    var data=readallbytes(rrp(r.path));
-    if(!data)
-    {
-       retres("Failed to read" +hh+ r.path,res);
-       return false;
-    }
-	
-    r.encoding=r.encoding || "utf8";
-    retres(iconv.decode(new Uint8Array(data),r.encoding),res);
-    return true;
-
-  } //else encoding!=mem
+  retres(  rf( r.path ) , res  ) ;
+  return ;
 }
 else if(r.cmd==="SetOnKey")
 {
@@ -294,8 +401,27 @@ else if(r.cmd==="app.TextToSpeech")
 }
 else if(r.cmd==="app.WriteFileInBytes")
 {
-    writeallbytes(rrp(r.path),r.byteArray)
-    retres("Successfully written"+hh+r.path,res);
+    if(  r.path.startsWith('content://')  )
+    {
+       app.DeleteFile( r.path ) ;
+       app.WriteFile( r.path, btoa(r.byteArray
+              .map(i=>String.fromCharCode(i)).join('')), 'Base64') ;
+       var ret= 'Successfully written to:' + hh + r.path ;
+     }
+    else
+       var ret = writeallbytes(  rrpath , r.byteArray  );
+      
+    retres(ret,res);
+}
+else if(r.cmd==="app.ReadFileInBytes")
+{
+    if(  r.path.startsWith('content://')  )
+      var ret = atob(app.ReadFile( r.path, "base64"  ))
+                      .split('').map(i=>i.charCodeAt(0));
+    else
+      var ret = readallbytes(  rrpath  );
+      
+    retres(ret,res);
 }
 else if(r.cmd==="app.WriteFile")
 {
@@ -310,60 +436,26 @@ else if(r.cmd==="app.WriteFile")
   {
       var obj=JSON.parse(r.text);
       sendmail(obj.to,obj.subject,obj.content,res);
+      return true;
   }
   
-  if(!rrp(r.path))
-  {
-    retres("Failed to write to" +hh+ r.path,res);
-    return false;
-  }
-  else
-  {
-    r.encoding=r.encoding || "utf8";
-    r.text=r.text || "";
-
-    var fbuff=Array.from(iconv.encode(r.text,r.encoding));
-  
-    writeallbytes(rrp(r.path),fbuff)
-    retres("Successfully written"+hh+r.path,res);
-  
-  }  //  else encoding!=mem && r.path
+  retres(  wf( r.path , r.text , r.encoding ) , res ) ;
+  return ;
 }
 else if(r.cmd==="app.MakeFolder")
 {
-  r.path=rrp(r.path);
-  if(r.path=="")
-    {
-     retres("Failed to create"+hh+r.path,res);
-
-     return false;
-    }
-  var farr=r.path.split("/");
-  var tmpf=farr[0];
-  var tflag=false;
-  farr.forEach((item,index)=>
-    {
-      if(index>0) tmpf+="/"+item;
-      var tde=dexists(tmpf);
-      var fde=fexists(tmpf);
-      if(!tde && !fde)
-        app.MakeFolder(tmpf);
-      else if(!tde && fde)
-        {
-          retres("Failed to create folder because file exists"+hh+r.path,res);
-          tflag=true;
-          return false;
-        }
-    });
-  if(tflag) return false;
-  retres("Successfully created"+hh+r.path,res);
-  return true;
+  retres(  mkdir( r.path ) , res  );
+  return ;
 }
 else if(r.cmd.startsWith("app.Rename"))
 {
-  r.path=rrp(r.path);
-  r.npath=rrp(r.npath);
-  if(r.path=="" || r.npath=="")
+  r.path+=''; r.npath+='';
+  if( ! r.path.startsWith( 'content://' ) )
+    r.path=rrp(r.path);
+  if( ! r.npath.startsWith( 'content://' ) )
+    r.npath=rrp(r.npath);
+    
+  if(  r.path=="" || r.npath==""  )
     {
       retres(`Failed to rename
 ${r.path}
@@ -372,6 +464,7 @@ ${r.npath}
 because the permission is denied!!`,res);
       return false;
     }
+	
 	
   var fe1=fexists(r.path);
   var de1=dexists(r.path);
@@ -382,7 +475,7 @@ because the permission is denied!!`,res);
 ${r.path}
 to
 ${r.npath}
-because ${r.path} dosen't exist!!`,res);
+because ${r.path} dose not exist!!`,res);
       return false;
     }
   else if(tfe1 && (!tfe2 && !tde2))
@@ -394,55 +487,62 @@ because ${r.path} dosen't exist!!`,res);
   else // r.npath has file or folder
     {
       if(r.overwrite==true)
-        {
+      {
+        //  First delete destination path
         if(tfe2)
           app.DeleteFile(r.npath);
         else // tde2
           app.DeleteFolder(r.npath);
 		  
-		if(fe1)
+		    //  Then rename source path
+		    if(fe1)
           app.RenameFile(r.path,r.npath);
-	    else if(de1)
-		  app.RenameFolder(r.path,r.npath);
+	      else if(de1)
+		      app.RenameFolder(r.path,r.npath);
 	  
         retres("Successfully renamed"+hh+r.path+hh+"to"+hh+r.npath,res);
         return true;
-        } // overwrite r.npath
+      } // overwrite r.npath
       else // do not overwrite r.npath
-        {
-          var rnpathn=r.npath;
-          while(fexists(rnpathn) || dexists(rnpathn))
-            {
-            var tind=rnpathn.lastIndexOf(".");
-            if(tind==-1)
-              rnpathn+="-new";
-            else
-              rnpathn=rnpathn.substr(0,tind)+"-new"+rnpathn.substr(tind);
-            }
-			
-	      if(fe1)
-		  {
-            tfe2? app.RenameFile(r.npath,rnpathn):app.RenameFolder(r.npath,rnpathn)
-            app.RenameFile(r.path,r.npath);
-		  }
-		  else if(de1)
-		  {
-            tfe2? app.RenameFile(r.npath,rnpathn):app.RenameFolder(r.npath,rnpathn)
-            app.RenameFolder(r.path,r.npath);
-		  }
+      {
+          var rnpathn=freepath(r.npath) ;
+          
+	        if(fe1)
+		      {
+            app.RenameFile( r.path,rnpathn );
+		      }
+		      else if(de1)
+		      {
+            app.RenameFolder( r.path , rnpathn );
+		      }
+		      
           retres("Successfully renamed"+hh+r.path+hh+"to"+hh+r.npath,res);
           return true;
-        } // do not overwrite r.npath
+      } // do not overwrite r.npath
     } // r.npath has file or folder
-}
+}  //  else if cmd Rename
 else if(r.cmd==="app.CopyFile")
 {
-  r.path=rrp(r.path);
-  r.npath=rrp(r.npath);
-  app.CopyFile(r.path,r.npath,r.overwrite)
+  let failt="Failed to copy:"+hh+r.path+hh+"to"+hh+r.npath+hh ;
+
+  r.path+=''; r.npath+='';
+  if( ! r.path.startsWith( 'content://' ) )
+    r.path=rrp(r.path);
+  if( ! r.npath.startsWith( 'content://' ) )
+    r.npath=rrp(r.npath);
+    
+  if(  r.path=="" || r.npath==""  )
+    retres( failt + "because permission was denied!" , res ) ;
+  
+  let b64=app.ReadFile( r.path , 'base64' );
+  if(r.overwrite) 
+    app.WriteFile( r.npath , b64 , 'Base64' );
+  else
+    app.WriteFile( r.npath = freepath( r.npath ) , b64 , 'Base64' );
+  //app.CopyFile(r.path,r.npath,r.overwrite)
   retres(`Successfully copied ${hh+r.path+hh}to${hh+r.npath}`,res);
-  return 0;
-}
+  return true ;
+}  //  cmd CopyFile
 else if(r.cmd==="app.CopyFolder")
 {
   r.path=rrp(r.path);
