@@ -559,6 +559,11 @@ if(r.cmd==="app.ReadFile")
 	
   }  //  else encoding!=mem && r.path
 }
+else if(r.cmd==="app.ReadFileInBytes")
+{
+    var data = await rf(global.joinp(rrp(r.path)));
+    retres( Array.from(data) , res);
+}
 else if(r.cmd==="app.WriteFileInBytes")
 {
     await wf(rrp(r.path),Buffer.from(r.byteArray))
