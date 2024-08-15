@@ -249,8 +249,14 @@ function wf(rpath, rtext, rencoding, test_existence)
   {
     return "Failed to write to:" +hh+ rpath ;
   }
-  else if(  rpath.startsWith('content://')  )
+  
+  //  path valid
+  let rrdir = rrpath.substr(0, rrpath.lastIndexOf('/') ) ;
+  let rdir = rpath.substr(0, rpath.lastIndexOf('/') ) ;
+  
+  if(  rpath.startsWith('content://')  )
   {
+    mkdir(rdir) ;
     app.DeleteFile(rpath) ;
     app.WriteFile( rpath, rtext, null, "UTF-8" ) ;
     if( ! test_existence ) return 'Tried to write, results unkown:' + hh + rpath ;
@@ -261,6 +267,8 @@ function wf(rpath, rtext, rencoding, test_existence)
   }
   else
   {
+    mkdir(rrdir) ;
+  
     rencoding=rencoding || "utf8";
     rtext = (rtext || "")+'' ;
 
@@ -271,6 +279,40 @@ function wf(rpath, rtext, rencoding, test_existence)
   
   }  //  else valid path
 }  //  function wf
+
+function rfb(rpath)
+{
+      var rrpath=rrp(rpath);
+  
+      if(  rpath.startsWith('content://')  )
+      var ret = atob(app.ReadFile( rpath, "base64"  ))
+                      .split('').map(i=>i.charCodeAt(0));
+    else
+      var ret = readallbytes(  rrpath  );
+    
+    return ret ;
+}  //  rfb
+
+function wfb(rpath, rbyteArray)
+{
+    var rrpath=rrp(rpath);
+    
+    let rrdir = rrpath.substr(0, rrpath.lastIndexOf('/') ) ;
+    let rdir = rpath.substr(0, rpath.lastIndexOf('/') ) ;
+    mkdir(rrdir || rdir);
+  
+    if(  rpath.startsWith('content://')  )
+    {
+       app.DeleteFile( rpath ) ;
+       app.WriteFile( rpath, btoa(rbyteArray
+              .map(i=>String.fromCharCode(i)).join('')), 'Base64') ;
+       var ret= 'Successfully written to:' + hh + rpath ;
+     }
+    else
+       var ret = writeallbytes(  rrpath , rbyteArray  );
+       
+     return ret;
+}  //  wfb
 
 function mkdir( rpath )
 {
@@ -310,6 +352,21 @@ function mkdir( rpath )
   return;
 }  //  function mkdir
 
+function freepath( rnpathn )
+{
+  while(fexists(rnpathn) || dexists(rnpathn))
+  {
+    var tind=rnpathn.lastIndexOf(".") ;
+    if(tind==-1)
+       rnpathn+="_1";
+    else
+       rnpathn=rnpathn.substr(0,tind)+"_1"+rnpathn.substr(tind) ;
+  }
+  //alert(rnpathn)
+  return rnpathn;
+}  //  freepath
+
+
 async function EvaluateAppCommand(r,res)
 {
 var simple_functions=["GetClipboardText",
@@ -324,7 +381,7 @@ var simple_functions=["GetClipboardText",
 					  "DisableKeys",
 		              "GetFileSize",
 		              "GetFileDate",
-		              "RealPath"];
+		              ];
 
 try{
 
@@ -371,6 +428,14 @@ else if(simple_functions.includes(r.cmd))  //  simple functions
 	  r.param[0]+='';
 	retres(app[r.cmd](...r.param),res)
 }
+else if(r.cmd==="RealPath")
+{
+  r.param=r.param[0]+'';
+  if(!rrp(r.param))
+    retres("Error, path doesn't exist or not allowed!",res);
+  else
+    retres(    app.RealPath( rrp(r.param) ) , res    ) ;
+}
 else if(r.cmd==="OpenFile")
 {
   r.param=r.param[0]+'';
@@ -401,26 +466,12 @@ else if(r.cmd==="app.TextToSpeech")
 }
 else if(r.cmd==="app.WriteFileInBytes")
 {
-    if(  r.path.startsWith('content://')  )
-    {
-       app.DeleteFile( r.path ) ;
-       app.WriteFile( r.path, btoa(r.byteArray
-              .map(i=>String.fromCharCode(i)).join('')), 'Base64') ;
-       var ret= 'Successfully written to:' + hh + r.path ;
-     }
-    else
-       var ret = writeallbytes(  rrpath , r.byteArray  );
-      
+    var ret=wfb(r.path);
     retres(ret,res);
 }
 else if(r.cmd==="app.ReadFileInBytes")
 {
-    if(  r.path.startsWith('content://')  )
-      var ret = atob(app.ReadFile( r.path, "base64"  ))
-                      .split('').map(i=>i.charCodeAt(0));
-    else
-      var ret = readallbytes(  rrpath  );
-      
+    var ret=rfb(r.path);
     retres(ret,res);
 }
 else if(r.cmd==="app.WriteFile")
@@ -534,12 +585,13 @@ else if(r.cmd==="app.CopyFile")
   if(  r.path=="" || r.npath==""  )
     retres( failt + "because permission was denied!" , res ) ;
   
-  let b64=app.ReadFile( r.path , 'base64' );
+  let barr=rfb( r.path );
   if(r.overwrite) 
-    app.WriteFile( r.npath , b64 , 'Base64' );
+    var ret=wfb( r.npath , barr );
   else
-    app.WriteFile( r.npath = freepath( r.npath ) , b64 , 'Base64' );
+    var ret=wfb( r.npath = freepath( r.npath ) , barr );
   //app.CopyFile(r.path,r.npath,r.overwrite)
+  //alert(jss([r.path,r.npath,barr],null,1));
   retres(`Successfully copied ${hh+r.path+hh}to${hh+r.npath}`,res);
   return true ;
 }  //  cmd CopyFile
