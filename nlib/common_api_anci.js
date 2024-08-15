@@ -123,8 +123,15 @@ browser_file_select_dialog.click();
 
 anci.bulf=anci.BrowserUploadFile;
 
-anci.ReadFileInBytes=async (filePath)=>anci.b64arr(await anci.ReadFile(filePath,"base64"));
+anci.ReadFileInBytes=function(filePath)
+{
+  var sobj={"cmd":"app.ReadFileInBytes",
+                "path":filePath,
+           };
 
+  return nodeapi(JSON.stringify(sobj),"pm");
+};
+	
 anci.rfb=anci.ReadFileInBytes;
 
 anci.WriteFileInBytes=function(filePath,byteArray)
