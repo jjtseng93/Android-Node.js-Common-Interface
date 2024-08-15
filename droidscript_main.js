@@ -581,12 +581,14 @@ else if(r.cmd==="app.DeleteFolder")
 }
 else if(r.cmd===("app.FileExists"))
 {
-  if(rrp(r.path)==="")
+  if(  rrpath==="" && ! r.path.startsWith('content://')  )
     {
       retres("Failed to test existence of" +hh+ r.path,res);
       return false;
     }
-  if(fexists(rrp(r.path)))
+  if(fexists(rrpath)  ||  
+          ( r.path.startsWith('content://') && fexists(r.path) )
+     )
   {
     retres("1",res);
     return true;
@@ -596,19 +598,21 @@ else if(r.cmd===("app.FileExists"))
 }
 else if(r.cmd===("app.FolderExists"))
 {
-  if(rrp(r.path)==="")
+  if(  rrpath==="" && ! r.path.startsWith('content://')  )
     {
       retres("Failed to test existence of" +hh+ r.path,res);
       return false;
     }
-  if(dexists(rrp(r.path)))
+  if(  ( dexists(rrpath) )  ||  
+          ( r.path.startsWith('content://') && dexists(r.path) )
+     )
   {
     retres("1",res);
     return true;
   }
   retres("0",res);
   return false;
-}
+}  //  cmd FolderExists
 else if(r.cmd==="app.ListFolder")
 {
   let p=rrp(r.path);
