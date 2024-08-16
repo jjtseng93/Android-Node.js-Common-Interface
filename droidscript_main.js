@@ -97,6 +97,18 @@ function OnStart()
 	                  window.passwd="${window.passwd}";` )
       });
 
+	
+    if( app.IsAPK() )
+    {
+      if( !app.FolderExists( '/sdcard/nlib' ) )
+        app.ExtractAssets('nlib','/sdcard/nlib');
+      
+      let p='/storage/emulated/0/Android/media/'+app.GetPackageName();
+      app.MakeFolder(p);
+      if( !app.FolderExists( p+'/nlib' ) )
+        app.ExtractAssets('nlib',p+'/nlib');
+    }
+
 }
 
 function OnData(isStartup)
@@ -384,6 +396,7 @@ var simple_functions=["GetClipboardText",
 					  "DisableKeys",
 		              "GetFileSize",
 		              "GetFileDate",
+		              "GetPackageName"
 		              ];
 
 try{
