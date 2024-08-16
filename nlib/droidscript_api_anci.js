@@ -80,10 +80,24 @@ return new Promise(resolve=>
 
 {  //  Network 
 
-anci.RunRemoteApp=(url)=>
+anci.RunRemoteApp=async (url)=>
 {
-    location.href=(url+`?passwd=${window.passwd}`);
-}
+  url+='';
+  let pk=await anci.GetPackageName();
+  
+  if(!url.match(/[\\\/]/g))
+  {
+    let rp='';
+    if( await anci.hasd( rp = '/bin/'+url) )
+      url=await anci.RealPath(rp+'/{app_entry}.html');
+    else if( await anci.hasd( rp = '/sd/Android/media/'+pk+'/napps/'+url ) )
+      url=await anci.RealPath(rp+'/{app_entry}.html');
+  }
+  
+  if(!confirm("Will now open other APP(inherits permissions) 將開啟其他APP(將繼承權限):\r\n"+url))
+    return;
+  location.href=(url+`?passwd=${window.passwd}`);
+}  //  func remoteApp
 
 anci.remoteapp=anci.RunRemoteApp;
 
@@ -144,7 +158,8 @@ let fnarr=["GetClipboardText",
 		   "DisableKeys",
 		   "GetFileSize",
 		   "GetFileDate",
-	           "RealPath"];
+	           "RealPath",
+	           "GetPackageName" ];
 for(let i of fnarr)
 	anci[i]=(...param)=>anci.GetByFunctionName(i,param);
 	
@@ -157,6 +172,7 @@ anci.getappn=anci.GetAppName;
 anci.getv=anci.GetVersion;
 anci.openu=anci.OpenUrl;
 anci.openf=anci.OpenFile;
+anci.getpkn=anci.GetPackageName;
 
 Object.defineProperty(anci,"cb",{set:anci.setcb,get:anci.getcb});
 Object.defineProperty(anci,"appp",{get:anci.getappp});
