@@ -128,15 +128,15 @@ App Manager
   <i class="fas fa-plus fa-3x"></i>
 </span>&nbsp;&nbsp;
 
-<span onclick="anci.OpenFile('/sdcard/napps/'+gbcache.applist[gbcache.selectedApp-1]+'/UI.html');" oncontextmenu="alert('Edit APP interface')">
+<span onclick="anci.remoteapp(  'notepad' , {filep:'/sdcard/napps/'+gbcache.applist[gbcache.selectedApp-1]+'/UI.html'}  );" oncontextmenu="alert('Edit APP interface')">
   <i class="fab fa-windows fa-3x"></i>
 </span>&nbsp;&nbsp;
 
-<span onclick="anci.OpenFile('/sdcard/napps/'+gbcache.applist[gbcache.selectedApp-1]+'/Code.js');" oncontextmenu="alert('Edit APP JS code')">
+<span onclick="anci.remoteapp(  'notepad' , {filep:'/sdcard/napps/'+gbcache.applist[gbcache.selectedApp-1]+'/Code.js'}  );" oncontextmenu="alert('Edit APP JS code')">
   <i class="fas fa-code fa-3x"></i>
 </span>&nbsp;&nbsp;
 
-<span onclick="runSelectedApp();" oncontextmenu="alert('Run the selected APP')">
+<span onclick="anci.remoteapp(gbcache.applist[gbcache.selectedApp-1]);" oncontextmenu="alert('Run the selected APP')">
   <i class="far fa-play-circle fa-3x"></i>
 </span>&nbsp;&nbsp;
 
