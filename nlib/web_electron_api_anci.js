@@ -95,9 +95,18 @@ var url;
 
 {  //  Network 
 
-anci.RunRemoteApp=(url)=>
+anci.RunRemoteApp=(url,param={})=>
 {
-    anci.OpenUrl(url+`?platform=${window.platform}&passwd=${window.passwd}&storage_location_url=${location.protocol+"//"+location.host+"/storage_local"}`);
+  param='&'+Object.keys(param).map(i=>{
+    return encodeURIComponent(i)+'='+encodeURIComponent(param[i]);
+  }).join('&');
+  url+='';
+  
+  if( !url.match(/[\\\/]/g) )
+    url='/sdcard/napps/'+url+'/main.app';
+  if(!confirm("Will now open other APP(inherits permissions) 將開啟其他APP(將繼承權限):\r\n"+url+'?passwd=...'+param))
+    return;
+  anci.OpenUrl(url+`?platform=${window.platform}&passwd=${window.passwd}&storage_location_url=${location.protocol+"//"+location.host+"/storage_local"+param}`);
 }
 
 anci.remoteapp=anci.RunRemoteApp;
