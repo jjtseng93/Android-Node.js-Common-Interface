@@ -815,14 +815,14 @@ else if(r.cmd==="app.xhr" || r.cmd=="downloadfile")
        wfb((r.path),Array.from(new Uint8Array(result)))
        retres("Successfully downloaded:"+hh+r.url,res);
      })
-    .catch(e=>retres(e.stack));
+    .catch(e=>retres(e.stack,res));
   else
     fr.then(r=>r.arrayBuffer()).then((result)=>
      {
         result=iconv.decode(new Uint8Array(result),r.encoding);
         retres(result,res);
      })
-    .catch(e=>retres(e.stack));
+    .catch(e=>retres(e.stack,res));
 
    //xhpost(r.url,r.data,cbf,r.method,"1",r.hhead);
 }
