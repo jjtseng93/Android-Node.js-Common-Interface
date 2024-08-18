@@ -820,14 +820,14 @@ else if(r.cmd==="app.xhr" || r.cmd=="downloadfile")
          retres("Successfully downloaded"+hh+r.url,res);
        });
      })
-    .catch(e=>retres(e.stack));
+    .catch(e=>retres(e.stack,res));
   else
     fr.then(r=>r.buffer()).then((result)=>
      {
         result=iconv.decode(result,r.encoding);
         retres(result,res);
      })
-    .catch(e=>retres(e.stack));
+    .catch(e=>retres(e.stack,res));
 
    //xhpost(r.url,r.data,cbf,r.method,"1",r.hhead);
 }
@@ -873,12 +873,11 @@ catch(e)
 }
 
 function rrp(istr)
-  {
+{
+try{
     if(istr==null || typeof(istr)!="string") return "";
-    while(istr.indexOf("\\")!==-1)
-    {
-      istr=istr.replace("\\","/");
-    }
+    istr=istr.replace(/\\/g,"/");
+ 
     var tind=istr.indexOf(":/");
     while(tind!=-1)
     {
@@ -893,22 +892,80 @@ function rrp(istr)
     {
       istr=istr.substr(0,istr.length-1);
     }
-    if(!istr.startsWith("sdcard/") && istr!="sdcard") return "";
-    //if(istr.indexOf("/")===-1 && istr!=="sdcard") return "";
-    var tarr=istr.split("/");
-    for(var i=0;i<tarr.length;i++)
+    //  ↑確保路徑為 aaa/bbb/ccc
+    
+    
+    let tarr=istr.split("/");
+    for(let i of tarr)
     {
-      if(tarr[i]==="." || tarr[i]==="..")
+      if(i=="." || i=="..")
       return "";
     }
-    if(pmarr!=null)
-    pmarr.forEach((item)=>
+    //  ↑確保沒有上一層指示符夾雜
+    
+    
+    let pattrep=['/sdcard/napps', '/sdcard/napps',
+                          '/sdcard/ndata', '/sdcard/ndata',
+                          '/sd/napps', '/sdcard/napps',
+                          '/sd/ndata', '/sdcard/ndata',
+                           '/sd', '/sdcard',
+                           '/Internal', '/sdcard',
+                           '/storage/emulated/0', '/sdcard',
+                           '/bin', '/sdcard/napps',
+                           '/apps', '/sdcard/napps',
+                           '/home', '/sdcard/ndata',
+                           '/~', '/sdcard/ndata',
+                           '/private', '/sdcard/private',
+                           '/media', '/sdcard'
+                           ];
+                           
+    let iistr='/'+istr;
+
+    let okflag=false;
+    
+    for( let i=0; i<pattrep.length; i+=2)
     {
-      istr=istr.replace(item.s,item.d);
-    });
+      let item1=pattrep[i] ;
+      let item2=pattrep[i+1] ;
+        if( typeof item1=='string' )
+        {
+          if( iistr.startsWith(item1+'/') || iistr==item1 )
+          {
+            istr=iistr.replace( item1, item2 );
+	    okflag=true;
+	    break;
+          }
+        }
+        else if( item1 instanceof RegExp && iistr.match(item1) )
+	{
+          istr=iistr.replace( item1, item2 );
+	  okflag=true;
+	  break;
+	}
+    }
+
+    if(!okflag) return ``;
+
+  if(pmarr!=null)
+  {
+    for(let item of pmarr)
+    {
+      if( istr.includes(item) )
+      {
+        istr=istr.replace(item.s,item.d);
+	return istr;
+      }
+    }
+  }
 
     return istr;
-  } // function rrp
+	
+}catch(e)
+{
+  console.log(e.stack);
+}
+    
+} // function rrp
 
 function DeleteFile(rpath)
  {
