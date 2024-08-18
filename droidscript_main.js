@@ -145,22 +145,13 @@ function retres(str,func,spread_array)
 	  web.Execute(`anci.tmpobj=${JSON.stringify(obj)};
                    ${func}(...anci.tmpobj.str)`);
 	
-	return;
-	str+="";
-	var tic="`";
-	if(str.includes(tic))
-	{
-	  str=str.replace(/`/g,window.passwd);
-	  web.Execute(`${func}(${tic+str+tic}.replace(/${window.passwd}/g,"${tic}"))`);
-	}
-	else
-	  web.Execute(`${func}(${tic+str+tic})`);
+	
 }
 
 function ls(p,debug)
 {
 
-  if(!dexists(p)   )
+  if(!dexists(p)  || !p )
   {
     return ( "Failed to list:"+hh+p );
   }
@@ -189,6 +180,8 @@ function ls(p,debug)
 
 async function lsr(path, get_date_size)
 {
+  if( !path )
+    return [];
   if(path.slice(-1)=="/")
     path=path.slice(0,-1);
   let farr=await ls(path);
