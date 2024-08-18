@@ -331,7 +331,7 @@ function wfb(rpath, rbyteArray)
 
 function mkdir( rpath )
 {
-  var failt="Failed to create"+hh+rpath ;
+  var failt="Failed to create:"+hh+rpath ;
   var rrpath=rrp(rpath);
   if( rpath.startsWith('content://') )
     rrpath=rpath;
@@ -362,7 +362,7 @@ function mkdir( rpath )
     if( !dexists( item ) ) return failt + hh + 'Failed at:' + hh + item;
   }
   
-  return "Successfully created"+hh+rpath ;
+  return "Successfully created:"+hh+rpath ;
   
   return;
 }  //  function mkdir
@@ -381,6 +381,51 @@ function freepath( rnpathn )
   return rnpathn;
 }  //  freepath
 
+async function cp( rpath, rnpath, roverwrite )
+{
+  let failt="Failed to copy:"+hh+rpath+hh+"to"+hh+rnpath+hh ;
+
+  rpath+=''; rnpath+='';
+  if( ! rpath.startsWith( 'content://' ) )
+    rpath=rrp(rpath);
+  if( ! rnpath.startsWith( 'content://' ) )
+    rnpath=rrp(rnpath);
+    
+  if(  rpath=="" || rnpath==""  )
+    return ( failt + "because permission was denied!" ) ;
+  
+  let barr=rfb( rpath );
+  
+  let f1=rpath.substr( rpath.lastIndexOf('/')+1 );
+  let f2=rnpath.substr( rnpath.lastIndexOf('/')+1 );
+  
+  if( f1==f2 && roverwrite==='ui' )
+  {
+    dlg = app.CreateListDialog( "檔名重複 Same File Name", "覆蓋 Overwrite,都保留 Keep Both,取消1筆 Cancel 1,取消全部 Cancel All" );
+    let dres=await new Promise( resolve=>{
+      dlg.SetOnTouch( resolve );
+      dlg.Show();
+    } ); 
+    dres+='';
+    if( dres.startsWith('覆蓋') )
+      roverwrite=true;
+    else if( dres.startsWith('都保留') )
+      roverwrite=false;
+    else if( dres.startsWith('取消1筆') )
+      return `User cancelled 1 copy task:` + hh + rpath + hh +'to' + hh +rnpath;
+    else
+      return `User cancelled all copy tasks:` + hh + rpath + hh +'to' + hh +rnpath;
+    
+  }  //  ui 
+  
+  if( roverwrite===true ) 
+    var ret=wfb( rnpath , barr );
+  else
+    var ret=wfb( rnpath = freepath( rnpath ) , barr );
+ 
+  return (`Successfully copied: ${hh+rpath+hh}to${hh+rnpath}`);
+  
+}  //  function cp file
 
 async function EvaluateAppCommand(r,res)
 {
@@ -448,17 +493,17 @@ else if(r.cmd==="RealPath")
 {
   r.param=r.param[0]+'';
   if(!rrp(r.param))
-    retres("Error, path doesn't exist or not allowed!",res);
+    retres("Error, path doesn't exist or not allowed:"+hh+r.param[0],res);
   else
-    retres(    app.RealPath( rrp(r.param) ) , res    ) ;
+    retres(  app.RealPath( rrp(r.param) ) , res  ) ;
 }
 else if(r.cmd==="OpenFile")
 {
   r.param=r.param[0]+'';
   if(!rrp(r.param))
-    retres("Error, file doesn't exist or not allowed!",res);
+    retres("Error, file doesn't exist or not allowed:"+hh+r.param[0],res);
   else
-    retres(app.OpenFile(rrp(r.param)),res)
+    retres(  app.OpenFile(rrp(r.param)) , res  );
 }
 else if(r.cmd==="app.ChooseFile")
 {
@@ -524,7 +569,7 @@ else if(r.cmd.startsWith("app.Rename"))
     
   if(  r.path=="" || r.npath==""  )
     {
-      retres(`Failed to rename
+      retres(`Failed to rename:
 ${r.path}
 to
 ${r.npath}
@@ -538,7 +583,7 @@ because the permission is denied!!`,res);
   var tfe1=(fe1 || de1); tfe2=fexists(r.npath); tde2=dexists(r.npath);
   if(!tfe1)
     {
-      retres(`Failed to rename
+      retres(`Failed to rename:
 ${r.path}
 to
 ${r.npath}
@@ -548,7 +593,7 @@ because ${r.path} dose not exist!!`,res);
   else if(tfe1 && (!tfe2 && !tde2))
     {
       app.RenameFile(r.path,r.npath);
-      retres("Successfully renamed"+hh+r.path+hh+"to"+hh+r.npath,res);
+      retres("Successfully renamed:"+hh+r.path+hh+"to"+hh+r.npath,res);
       return true;
     }
   else // r.npath has file or folder
@@ -567,7 +612,7 @@ because ${r.path} dose not exist!!`,res);
 	      else if(de1)
 		      app.RenameFolder(r.path,r.npath);
 	  
-        retres("Successfully renamed"+hh+r.path+hh+"to"+hh+r.npath,res);
+        retres("Successfully renamed:"+hh+r.path+hh+"to"+hh+r.npath,res);
         return true;
       } // overwrite r.npath
       else // do not overwrite r.npath
@@ -583,69 +628,113 @@ because ${r.path} dose not exist!!`,res);
             app.RenameFolder( r.path , rnpathn );
 		      }
 		      
-          retres("Successfully renamed"+hh+r.path+hh+"to"+hh+r.npath,res);
+          retres("Successfully renamed:"+hh+r.path+hh+"to"+hh+r.npath,res);
           return true;
       } // do not overwrite r.npath
     } // r.npath has file or folder
 }  //  else if cmd Rename
 else if(r.cmd==="app.CopyFile")
 {
+    retres( await cp( r.path, r.npath, r.overwrite ) , res ) ;
+    return;
+}  //  cmd CopyFile
+else if(r.cmd==="app.CopyFolder")
+{
   let failt="Failed to copy:"+hh+r.path+hh+"to"+hh+r.npath+hh ;
 
   r.path+=''; r.npath+='';
-  if( ! r.path.startsWith( 'content://' ) )
+  
+  if( r.path.startsWith( 'content://' ) )
+  {
+    retres( failt + "because content URI folders can't be listed", res );
+    return; 
+  }
+  else
     r.path=rrp(r.path);
+    
   if( ! r.npath.startsWith( 'content://' ) )
     r.npath=rrp(r.npath);
     
   if(  r.path=="" || r.npath==""  )
+  {
     retres( failt + "because permission was denied!" , res ) ;
+    return;
+  }
   
-  let barr=rfb( r.path );
-  if(r.overwrite) 
-    var ret=wfb( r.npath , barr );
-  else
-    var ret=wfb( r.npath = freepath( r.npath ) , barr );
-  //app.CopyFile(r.path,r.npath,r.overwrite)
-  //alert(jss([r.path,r.npath,barr],null,1));
-  retres(`Successfully copied ${hh+r.path+hh}to${hh+r.npath}`,res);
-  return true ;
-}  //  cmd CopyFile
-else if(r.cmd==="app.CopyFolder")
-{
-  r.path=rrp(r.path);
-  r.npath=rrp(r.npath);
-  app.CopyFolder(r.path,r.npath,r.overwrite)
-  retres(`Successfully copied ${hh+r.path+hh}to${hh+r.npath}`,res);
-  return 0;
+  let farr=await lsr( r.path );
+  let foldern = r.path.substr( r.path.lastIndexOf('/')+1 ) ;
+  let rpath=app.RealPath( r.path ) ;
+  if( rpath.endsWith('/') )
+    { rpath=rpath.slice(0,-1); }
+  if( !r.npath.endsWith('/') )
+    {  r.npath += '/' ;  }
+  r.npath += foldern ;
+  
+  for(let isrc of farr)
+  {
+      let idest = app.RealPath(isrc).replace( rpath , r.npath );
+      let cpres=await cp( isrc, idest, r.overwrite ??  'ui' );
+      if( cpres.startsWith('User cancelled all') )
+      {
+        retres( failt + "because a file has the same name:" +cpres, res );
+        return;
+      }
+   }
+  
+  retres(`Successfully copied: ${hh+r.path+hh}to${hh+r.npath}`,res);
+  return ;
 }
 else if(r.cmd==="app.DeleteFile")
 {
-  r.path=rrp(r.path);
-  app.DeleteFile(r.path);
-  retres("Successfully deleted"+hh+r.path,res);
-  return 0;
+  let failt="Failed to delete:"+hh+r.path+hh;
+  r.path+='';
+  if( !r.path.startsWith('content://') )
+    r.path=rrp(r.path);
+    
+  if( r.path=='' )
+  {
+    retres(  failt + "because access was denied" , res  );
+    return;
+  }
+  if( !confirm( 'Delete file?:'+hh+r.path) )
+  {
+    retres(  failt + "because user cancelled it" , res  );
+    return;
+  }
+  app.DeleteFile(r.path) ;
+  if( !fexists(r.path) )
+    retres("Successfully deleted:"+hh+r.path,res);
+  else
+    retres(  failt , res  );
+  return ;
 }
 else if(r.cmd==="app.DeleteFolder")
 {
+  let failt="Failed to delete:"+hh+r.path+hh;
   r.path=rrp(r.path);
-  if(r.path=="" || r.path=="sdcard")
-    {
-      retres("Failed to delete"+hh+r.path,res);
+  if(r.path=="" || r.path=="/storage/emulated/0")
+  {
+      retres(  failt+"because access was denied" , res  );
       return false;
-    }
+  }
+  
   if(dexists(r.path))
+  {
+    if( !confirm( 'Delete folder?:'+hh+r.path) )
     {
+      retres(  failt + "because user cancelled it" , res  );
+      return; 
+    }
       app.DeleteFolder(r.path);
 
       retres("Successfully deleted"+hh+r.path,res);
       return true;
-    }
+  }
   else
-    {
-      retres("Failed to delete"+hh+r.path,res);
-      return true;
-    }
+  {
+      retres(  failt+"because folder doesn't exist!" , res  );
+      return false;
+  }
 }
 else if(r.cmd===("app.FileExists"))
 {
@@ -723,8 +812,8 @@ else if(r.cmd==="app.xhr" || r.cmd=="downloadfile")
     fr.then(r=>r.arrayBuffer()).then((result)=>
      {
        console.log(r.path);
-       writeallbytes(rrp(r.path),Array.from(new Uint8Array(result)))
-       retres("Successfully downloaded"+hh+r.url,res);
+       wfb((r.path),Array.from(new Uint8Array(result)))
+       retres("Successfully downloaded:"+hh+r.url,res);
      })
     .catch(e=>retres(e.stack));
   else
@@ -751,7 +840,7 @@ retres("已處理:" +hh+jss(r),res);
 
 
 function rrp(istr)
-{
+  {
     try{
     if(istr==null || typeof(istr)!="string") return "";
     istr=istr.replace(/\\/g,"/");
@@ -781,74 +870,54 @@ function rrp(istr)
     }
     //  ↑確保沒有上一層指示符夾雜
     
-    
-    let patt=[  ( /^sdcard[\/]/g ) , ( /^sdcard$/g ) ,
-                       ( /^sd[\/]/g ) , ( /^sd$/g ) ,
-                       ( /^bin[\/]/g ) , ( /^bin$/g ) ,
-                       ( /^apps[\/]/g ) , ( /^apps$/g ) ,
-                       ( /^~[\/]/g ) , ( /^~$/g ) ,
-                       ( /^android_asset[\/]/g ) , ( /^android_asset$/g ) ,
-                       ( /^private[\/]/g ) , ( /^private$/g ) ,
-                       ( /^home[\/]/g ) , ( /^home$/g ) ,
-                       ( /^Internal[\/]/g ) , ( /^Internal$/g ) ,
-                    ];
                     
-    let iistr='/'+istr;
     let pv = app.GetPrivateFolder().replace('/files','');
-    if(  iistr.startsWith(pv+'/') || 
-          iistr==pv   ) 
-      return iistr;
+    app.MakeFolder( '/sdcard/napps' );
+    app.MakeFolder( '/sdcard/ndata' );
     
-    if( istr=='private' || istr.startsWith('private/') )
-      return iistr.replace('/private',pv);
+    let pattrep=['/sdcard/napps', '/sdcard/napps',
+                          '/sdcard/ndata', '/sdcard/ndata',
+                          '/sd/napps', '/sdcard/napps',
+                          '/sd/ndata', '/sdcard/ndata',
+                           '/sdcard', '/storage/emulated/0',
+                           '/sd', '/storage/emulated/0',
+                           '/Internal', '/storage/emulated/0',
+                           '/storage/emulated/0', '/storage/emulated/0',
+                           '/bin', '/sdcard/napps',
+                           '/apps', '/sdcard/napps',
+                           '/home', '/sdcard/ndata',
+                           '/~', '/sdcard/ndata',
+                           '/private', pv,
+                           pv, pv,
+                           /^\/android_asset$/, '/android_asset/',
+                           '/android_asset', '/android_asset',
+                           '/media', '/storage/emulated/0/Android/media/'+app.GetPackageName()
+                           ];
+                           
+    let iistr='/'+istr;
     
+    for( let i=0; i<pattrep.length; i+=2)
+    {
+      let item1=pattrep[i] ;
+      let item2=pattrep[i+1] ;
+        if( typeof item1=='string' )
+        {
+          if( iistr.startsWith(item1+'/') || iistr==item1 )
+          {
+            return iistr.replace( item1, item2 );
+          }
+        }
+        else if( item1 instanceof RegExp && iistr.match(item1) )
+          return iistr.replace( item1, item2 );
+    }
     
-    let retnull=true;
+    return ``;
     
-    for(let i of patt)
-      if( istr.match(i) ) retnull=false;
-      
-    if(retnull) return "";
-
-    let nd='/sdcard/ndata'; let nnd='/sd/ndata';
-    let na='/sdcard/napps'; let nna='/sd/napps';
-    app.MakeFolder(nd);
-    app.MakeFolder(na);
-    if( iistr == nd || iistr.startsWith( nd+'/' ) )
-      return iistr;
-    if( iistr == nnd || iistr.startsWith( nnd+'/' ) )
-      return iistr.replace('/sd/','/sdcard/') ;
-    if( iistr == na || iistr.startsWith( na+'/' ) )
-      return iistr;
-    if( iistr == nna || iistr.startsWith( nna+'/' ) )
-      return iistr.replace('/sd/','/sdcard/') ;
-    if( istr=="~" || istr.startsWith("~/") )
-      return iistr.replace('/~',nd);
-    if( istr=='home' || istr.startsWith('home/'))
-      return iistr.replace('/home',nd);
-      
-      
-    if(  istr.match(patt[0]) || istr.match(patt[1])  )
-      return ("/"+istr).replace("/sdcard","/storage/emulated/0");
-    else if(  istr.match(patt[2]) || istr.match(patt[3])  )
-      return ("/"+istr).replace("/sd","/storage/emulated/0");
-    else if(  istr.match(patt[16]) || istr.match(patt[17])  )
-      return ("/"+istr).replace("/Internal","/storage/emulated/0");
-    else if(  istr.match(patt[10])  )
-      return iistr;
-    else if(  istr.match(patt[11])  )
-      return iistr+'/';
-    else if(  istr.match(patt[5]) || istr.match(patt[7])  )
-      return na;
-    else if(  istr.match(patt[4]) || istr.match(patt[6])  )
-      return na+istr.substr(istr.indexOf('/'));
-    else
-      return "";
     }catch(e)
     {
       alert(e.stack)
     }
-} // function rrp
+  } // function rrp
   
 
 function readallbytes(filen)
