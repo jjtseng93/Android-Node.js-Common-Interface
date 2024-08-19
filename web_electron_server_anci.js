@@ -909,6 +909,7 @@ try{
                           '/sd/napps', '/sdcard/napps',
                           '/sd/ndata', '/sdcard/ndata',
                            '/sd', '/sdcard',
+		           '/sdcard','/sdcard',
                            '/Internal', '/sdcard',
                            '/storage/emulated/0', '/sdcard',
                            '/bin', '/sdcard/napps',
