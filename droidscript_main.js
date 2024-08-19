@@ -392,7 +392,7 @@ async function cp( rpath, rnpath, roverwrite )
   let f1=rpath.substr( rpath.lastIndexOf('/')+1 );
   let f2=rnpath.substr( rnpath.lastIndexOf('/')+1 );
   
-  if( f1==f2 && roverwrite==='ui' )
+  if( fexists(rnpath) && roverwrite==='ui' )
   {
     dlg = app.CreateListDialog( "檔名重複 Same File Name", "覆蓋 Overwrite,都保留 Keep Both,取消1筆 Cancel 1,取消全部 Cancel All" );
     let dres=await new Promise( resolve=>{
