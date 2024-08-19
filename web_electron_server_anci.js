@@ -9,7 +9,7 @@ global.joinp=(path_original)=>{
     let pret = require("path").join(  __dirname , path_original  );
         pret = pret.replace(/\\/g,"/");
     return pret ;
-}；
+};
 
 global.platform = global.platform || "web";
 
