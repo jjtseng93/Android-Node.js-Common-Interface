@@ -3,7 +3,13 @@ Start of the block for letting this node app
  restart automatically when an error occurs
 */
 
-global.joinp=(path_original)=>(require("path").join(__dirname, path_original)).replace(/\\/g,"/");
+global.joinp=(path_original)=>{
+    if( !path_original )
+      return ``;
+    let pret = require("path").join(  __dirname , path_original  );
+        pret = pret.replace(/\\/g,"/");
+    return pret ;
+}；
 
 global.platform = global.platform || "web";
 
