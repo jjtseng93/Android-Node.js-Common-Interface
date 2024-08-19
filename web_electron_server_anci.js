@@ -526,8 +526,16 @@ res.end(str);
 
 async function EvaluateAppCommand(r,res)
 {
-var wf=util.promisify(fs.writeFile);
+var wfp=util.promisify(fs.writeFile);
 var rf=util.promisify(fs.readFile);
+
+var wf=async (path,buff)=>
+{
+  path+='';
+  let fdp=path.substr(0,path.lastIndexOf('/'))
+  await fse.ensureDir(fdp);
+  return await wfp(path,buff);
+}
 
 try{
 
@@ -608,34 +616,8 @@ else if(r.cmd==="app.WriteFile")
 }
 else if(r.cmd==="app.MakeFolder")
 {
-  r.path=global.joinp(rrp(r.path));
-  if(!r.path)
-  {
-    retres("Failed to create"+hh+r.path,res);
-    return false;
-  }
-  
-  var farr=r.path.split("/");
-  var tmpf=farr[0];
-  var tflag=false;
-  farr.forEach((item,index)=>
-    {
-      if(index>0) tmpf+="/"+item;
-      var tde=dexists(tmpf);
-      var fde=fexists(tmpf);
-      if(!tde && !fde)
-        fs.mkdirSync(tmpf);
-      else if(!tde && fde)
-        {
-          retres("Failed to create folder because file exists"+hh+r.path,res);
-          tflag=true;
-          return false;
-        }
-    });
-  if(tflag) return false;
-  
-  retres("Successfully created"+hh+r.path,res);
-  return true;
+  retres(  MakeFolder(r.path) , res  ) ;
+  return;
 }
 else if(r.cmd.startsWith("app.Rename"))
 {
@@ -973,6 +955,36 @@ try{
 }
     
 } // function rrp
+
+function MakeFolder(rpath)
+{
+  let failt="Failed to create:"+hh+rpath+hh ;
+  rpath=global.joinp(rrp(rpath));
+  if(!rpath)
+  {
+    return failt + "Access Denied!"
+  }
+  
+  var farr=rpath.match(/\/[^\/]+/g);
+  var tmpf=farr[0];
+  var tflag=false;
+  for(let [index,item] of farr.entries())
+    {
+      if(index>0) tmpf+=item;
+      var tde=dexists(tmpf);
+      var fde=fexists(tmpf);
+      if(!tde && !fde)
+        fs.mkdirSync(tmpf);
+      else if(!tde && fde)
+        {
+          return failt+"because file exists" ;
+        }
+    }
+  if(dexists(rpath))
+    return ("Successfully created"+hh+rpath);
+  else
+    return failt;
+}  //  MakeFolder
 
 function DeleteFile(rpath)
  {
