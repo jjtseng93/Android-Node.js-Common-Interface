@@ -566,7 +566,7 @@ else if(r.cmd==="app.ReadFileInBytes")
 }
 else if(r.cmd==="app.WriteFileInBytes")
 {
-    await wf(rrp(r.path),Buffer.from(r.byteArray))
+    await wf( global.joinp(rrp(r.path)),Buffer.from(r.byteArray))
     retres("Successfully written"+hh+r.path,res);
 }
 else if(r.cmd==="app.WriteFile")
