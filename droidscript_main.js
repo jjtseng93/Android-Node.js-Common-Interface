@@ -485,18 +485,38 @@ else if(simple_functions.includes(r.cmd))  //  simple functions
 else if(r.cmd==="RealPath")
 {
   r.param=r.param[0]+'';
-  if(!rrp(r.param))
-    retres("Error, path doesn't exist or not allowed:"+hh+r.param[0],res);
+  let p=rrp(r.param);
+  if( !p )
+    retres("Error, path doesn't exist or not allowed:"+hh+r.param,res);
   else
-    retres(  app.RealPath( rrp(r.param) ) , res  ) ;
+    retres(  app.RealPath(p) , res  ) ;
 }
 else if(r.cmd==="OpenFile")
 {
+  let mime=r.param[1];
   r.param=r.param[0]+'';
   if(!rrp(r.param))
-    retres("Error, file doesn't exist or not allowed:"+hh+r.param[0],res);
+    retres("Error, file doesn't exist or not allowed:"+hh+r.param,res);
   else
-    retres(  app.OpenFile(rrp(r.param)) , res  );
+    retres(  app.OpenFile(rrp(r.param),mime) , res  );
+}
+else if(r.cmd==="EvalServer")
+{
+  r.param=r.param[0]+'';
+  if( !confirm( `即將在伺服器執行以下安全性未知指令，確定嗎？`+hh+
+                        `Will execute on server the following safety unknown command, are you sure?`+hh+r.param)  )
+  {
+      retres( `Failed to execute: User rejected it! ` ,res );
+      return false;
+  }
+  
+  let cmd=`(async ()=>{
+      ${   r.param   };
+  })() ;`
+  
+  let ret=await eval(cmd);
+  retres(  ret , res  );
+  return true;
 }
 else if(r.cmd==="app.ChooseFile")
 {
