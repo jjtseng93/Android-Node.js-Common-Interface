@@ -135,6 +135,24 @@ anci.BrowserDownloadFile=async (b64_or_arr,file_name)=>
 
 anci.bdlf=anci.BrowserDownloadFile;
 
+anci.OpenFile=async function(filepath,mime)
+{
+  let rfilepath=await anci.realp( filepath )
+  
+  alert2(`<iframe style="width:100%;height:85%;
+          background-color:white;"
+          src="${rfilepath}">
+          </iframe>` , true )
+  
+  var sobj={"cmd":"OpenFile",
+                "param":[filepath+'',mime+''] };
+
+  await anci.sleep(1000);
+  
+  return await nodeapi(JSON.stringify(sobj),"pm");
+
+}  //  anci.OpenFile
+
 }  //  File system operations End
 
 anci.GetByFunctionName=function(funcName,param)
@@ -150,7 +168,7 @@ let fnarr=["GetClipboardText",
 		   "GetAppName",
 		   "GetVersion",
 		   "OpenUrl",
-		   "OpenFile",
+		   
 		   "PreventScreenLock",
 		   "SetSharedApp",
 		   "GetSharedText",
@@ -158,7 +176,7 @@ let fnarr=["GetClipboardText",
 		   "DisableKeys",
 		   "GetFileSize",
 		   "GetFileDate",
-	           "RealPath",
+	           
 	           "GetPackageName" ];
 for(let i of fnarr)
 	anci[i]=(...param)=>anci.GetByFunctionName(i,param);
