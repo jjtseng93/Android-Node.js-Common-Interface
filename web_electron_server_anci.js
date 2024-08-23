@@ -619,6 +619,15 @@ else if(r.cmd==="app.MakeFolder")
   retres(  MakeFolder(r.path) , res  ) ;
   return;
 }
+else if(r.cmd==="RealPath")
+{
+  r.param=r.param[0]+'';
+  let p=rrp(r.param);
+  if( !p )
+    retres("Error, path doesn't exist or not allowed:"+hh+r.param,res);
+  else
+    retres(  p , res  ) ;
+}
 else if(r.cmd.startsWith("app.Rename"))
 {
   r.path=global.joinp(rrp(r.path));
