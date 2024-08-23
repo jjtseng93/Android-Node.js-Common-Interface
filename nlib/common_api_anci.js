@@ -201,6 +201,15 @@ anci.DeleteFolder=function(folderPath)
 
 anci.rmdir=anci.DeleteFolder;
 
+anci.RealPath=function(filepath)
+{
+  var sobj={"cmd":"RealPath",
+                "param":[filepath+''] };
+  return nodeapi(JSON.stringify(sobj),"pm");
+};
+
+anci.realp=anci.RealPath;
+
 anci.RenameFile=function(oldPath,newPath,overwrite,isFolder)
 {
   var sobj={"cmd": (isFolder?"app.RenameFolder":"app.RenameFile"),
@@ -419,6 +428,15 @@ anci.filemtime=async (filePath)=>{return await anci.GetFileDate(filePath);};
 anci.filesize=async (filePath)=>{return await anci.GetFileSize(filePath);};
 
 }  //  File system operations End
+
+anci.EvalServer=function(command_to_evaluate)
+{
+  var sobj={"cmd":"EvalServer",
+                "param":[command_to_evaluate] };
+  return nodeapi(JSON.stringify(sobj),"pm");
+};
+  
+anci.evalserver=anci.EvalServer;
 
 anci.SetClipboardText=async function(txt)
 {
