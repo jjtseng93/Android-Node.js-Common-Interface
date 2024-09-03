@@ -10,6 +10,16 @@
 
 anci={droidscript_resolves:{},alert2_resolves:{},showlist_resolves:{}};
 
+{  //  Ensure jQuery and progress dialog and file upload control
+  if(typeof(jQuery)!="function")
+  {
+    try{
+    (function () { try{var script = document.createElement('script'); script.src="https://code.jquery.com/jquery-3.7.1.min.js"; script.integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="; script.crossOrigin="anonymous"; document.documentElement.appendChild(script);}catch(e){alert(e.stack)} })()
+    }catch(e){alert(e.stack)}
+  }
+  anci._bfsd=`<input id="browser_file_select_dialog" type="file" style="position: absolute; top: -100em">`;
+  anci._pgfs=`<div id="progress_fullscreen" style="padding:50px 10px 50px 10px;text-align:center;position:fixed;left:20%;top:15%;width:60%;display:none;z-index:100;background-color:#333333;color:white;border-radius:20px;font-size:24px;" onclick="this.style.display='none';"></div>`;
+}
 
 {  //  Node API
 
@@ -79,6 +89,9 @@ anci.BrowserUploadFile=(overwrite)=>
 {
 	if(!["true","false"].includes(overwrite+''))
 	    overwrite="pm";
+	
+if(!window.browser_file_select_dialog)
+  $("body").append(anci._bfsd);
 
 return new Promise(resolve=>{
 browser_file_select_dialog.onchange=function()
@@ -557,7 +570,7 @@ anci.ListObjectProperties=function(obj)
             }
           let ret=Object.keys(listK);
           let oname=objO.constructor && objO.constructor.name;
-          if(oname=="Number")
+          if(oname=="Number" || oname=="Boolean")
             ret.unshift(objO);
           else if(oname=="String")
             ret.unshift(objO.substr(0,1000));
@@ -714,6 +727,10 @@ anci.faicon=anci.FontAwesomeIcon;
 
 anci.ShowProgress=function(msg)
 {
+  if(!window.progress_fullscreen)
+  {
+    $("body").append(anci._pgfs);
+  }
     msg=(msg || "Loading... 載入中...")+"";
     ge("progress_fullscreen").innerHTML=msg;
     ge("progress_fullscreen").style.display="inline";
@@ -723,6 +740,7 @@ anci.showp=anci.ShowProgress;
 
 anci.HideProgress=function()
 {
+  if(window.progress_fullscreen)
     ge("progress_fullscreen").onclick();
 };
 
@@ -1037,7 +1055,10 @@ anci.htot=anci.HtmlToText;
 
 anci.Sleep=(milliSeconds)=>
 {
-	$.isNumeric(milliSeconds) && (milliSeconds-=0);
+    if(isNaN(milliSeconds))
+      milliSeconds=100;
+    else
+      milliSeconds-=0;
 
     return new Promise(resolve=>{
     setTimeout(resolve,milliSeconds);
