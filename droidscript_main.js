@@ -57,8 +57,15 @@ function OnBack()
 	return;
   }
   
-  web.Execute("if(typeof(OnStop)=='function') OnStop();");
-  app.Exit();
+  web.Execute(`
+  
+  (async()=>{
+    if(typeof(OnStop)=='function') 
+      await OnStop();
+    anci.Exit();
+  })();
+  
+  `);
 }
 
 function OnConfig()
@@ -89,13 +96,18 @@ function OnStart()
     app.AddLayout( lay );
 	
 	web.LoadUrl( "{app_entry}.html" );
+
+    var firstrun=1;
     
     web.SetOnProgress(prog=>
-	  {
-        //if(prog-100==0)
+    {
+      if(firstrun==1)
+      {
         web.Execute( `prompt = window.anci && window.anci.Prompt;
-	                  window.passwd="${window.passwd}";` )
-      });
+	                  window.passwd="${window.passwd}";` );
+	firstrun=0;
+      }
+    });
 
 	
     if( app.IsAPK() )
@@ -113,8 +125,8 @@ function OnStart()
 
 function OnData(isStartup)
 {
-if(!isStartup)
-	web.Execute("if(typeof OnData=='function') OnData()");
+  if(!isStartup)
+    web.Execute("if(typeof OnData=='function') OnData()");
 }
 
 function web_OnConsole( consoleMsg )
@@ -431,7 +443,7 @@ var simple_functions=["GetClipboardText",
 					  "SetSharedApp",
 					  "GetSharedText",
 					  "GetSharedFiles",
-					  "DisableKeys",
+					  "DisableKeys","Exit",
 		              "GetFileSize",
 		              "GetFileDate",
 		              "GetPackageName"
