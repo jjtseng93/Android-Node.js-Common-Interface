@@ -502,6 +502,31 @@ anci.GetDisplayHeight=function()
 
 {  //  Common libraries
 
+anci.ParseUrlParam = (url)=>
+{
+  url+='';
+  let i=url.indexOf('?');
+  if(i==-1) return {};
+  url=url.substr(i+1);
+  let qarr=url.split("&")
+              .map(  ii=>( ii.split("=").map(iii=>decodeURIComponent(iii)) )  );
+
+  return Object.fromEntries(qarr);
+}
+
+anci.parseurlp = anci.ParseUrlParam;
+  
+anci.query = anci.parseurlp(location.href);
+
+anci.GenerateUrlParam = (param={})=>
+{
+  return Object.keys(param).map(i=>{
+    return encodeURIComponent(i)+'='+encodeURIComponent(param[i]);
+  }).join('&');
+}
+
+anci.genurlp=anci.GenerateUrlParam;
+
 anci.GetDocumentation=()=>
 {
 let str=JSON.stringify(
