@@ -176,7 +176,7 @@ let fnarr=["GetClipboardText",
 		   "DisableKeys",
 		   "GetFileSize",
 		   "GetFileDate",
-	           
+	           "Exit",
 	           "GetPackageName" ];
 for(let i of fnarr)
 	anci[i]=(...param)=>anci.GetByFunctionName(i,param);
