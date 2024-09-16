@@ -8,13 +8,14 @@
 
 
 
-window.platform = window.platform || "web";
+{
+  window.passwd = window.passwd || anci.query.passwd || '' ;
+  window.platform = window.platform || anci.query.platform || "web";
+}
 
 if(window.platform == "web" || window.platform == "electron")
 {  //  if platform matches
 
-
-$(OnStart);
 
 {  //  Node API
 
