@@ -1230,12 +1230,6 @@ ge=(elementID)=>document.getElementById(elementID);
   await anci.waitv(document,'body');
   await anci.waitv(window,'jQuery');
   
-  
-  if(window.platform=="android")
-  {
-    await anci.SetOrientation(anci.DroidOrientation || "Default");
-    anci.AppVersion = (await anci.ver) || 0.87;
-  }
 
   if(typeof(OnStop)=="function")
     window.onbeforeunload=OnStop;
@@ -1244,6 +1238,12 @@ ge=(elementID)=>document.getElementById(elementID);
     await OnLoad();
   if(  typeof(OnData) == "function"  )
     await OnData(true);
+
+  if(window.platform=="android")
+  {
+    await anci.SetOrientation(anci.DroidOrientation || "Default");
+    anci.AppVersion = (await anci.ver) || 0.87;
+  }
   
 })();  //  await for jQuery and body
 
