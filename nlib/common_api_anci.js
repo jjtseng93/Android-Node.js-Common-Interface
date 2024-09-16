@@ -21,6 +21,20 @@ anci={droidscript_resolves:{},alert2_resolves:{},showlist_resolves:{}};
   anci._pgfs=`<div id="progress_fullscreen" style="padding:50px 10px 50px 10px;text-align:center;position:fixed;left:20%;top:15%;width:60%;display:none;z-index:100;background-color:#333333;color:white;border-radius:20px;font-size:24px;" onclick="this.style.display='none';"></div>`;
 }
 
+{  //  Default Parameters
+    anci.AppVersion = 0.87;              
+    // The app version for Node.js web/electron APP
+    anci.ProVersion = false;
+    anci.DroidOrientation = "Default";    
+    /* 
+      Orientation for Android DroidScript APP, 
+      Available values: 
+        Default,Portrait,Landscape,
+        ReversePortrait,ReverseLandscape, 
+        or use number 0~4
+    */
+}
+
 {  //  Node API
 
 {  //  Network
@@ -1210,6 +1224,36 @@ anci.Timer=function(action_function,interval_msec)
 ge=(elementID)=>document.getElementById(elementID);
 
 }  //  Common libraries End
+
+//  wait for jquery and body and trigger onload 
+(async ()=>{
+  await anci.waitv(document,'body');
+  await anci.waitv(window,'jQuery');
+  
+  
+  if(window.platform=="android")
+  {
+    await anci.SetOrientation(anci.DroidOrientation || "Default");
+    anci.AppVersion = (await anci.ver) || 0.87;
+  }
+
+  if(typeof(OnStop)=="function")
+    window.onbeforeunload=OnStop;
+  
+  if(  typeof(OnLoad) == "function"  )
+    await OnLoad();
+  if(  typeof(OnData) == "function"  )
+    await OnData(true);
+  
+})();  //  await for jQuery and body
+
+
+
+
+
+
+
+
 
 
 
