@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width" charset="utf8">
-<meta name="theme-color" content="#87CEEB">
+<meta name="theme-color" content="#87CEEB" id="theme_from_app_entry">
 <link rel="icon" href="/favicon.ico" type="image/x-icon"/>
 <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon"/>
 <title>title_string_to_be_replaced</title>
@@ -37,7 +37,7 @@
   
   if(!location.pathname.endsWith("/main.app"))
   {
-    await new Promise(resolve=>
+    anci.ui_resolve = new Promise(resolve=>
     {
       $.get("UI.html").then(UI_html=>
       {
