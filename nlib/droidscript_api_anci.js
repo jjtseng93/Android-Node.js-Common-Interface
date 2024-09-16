@@ -8,36 +8,14 @@
 
 
 
+{
+  window.passwd = window.passwd || anci.query.passwd || '' ;
+  window.platform = window.platform || anci.query.platform || "android";
+}
+
+
 if(window.platform == "android")
 {  //  if platform matches
-
-
-
-function routine_init()
-{
-  window.OnLoad_Promise=new Promise(async (resolve)=>
-  {
-
-    await anci.SetOrientation(anci.DroidOrientation);
-
-
-    $.get("UI.html").then(UI_html=>
-    {
-      $(document.body).append(UI_html);
-	  $(async ()=>{
-	    if(typeof(OnLoad)=="function")
-          await OnLoad();
-		  
-		resolve("OnLoad run!");
-		
-		(typeof(OnData) == "function") && (await OnData(true))
-	  });
-
-    }); // get UI.html then
-
-  });  // html onstart finish resolve
-
-}
 
 
 
