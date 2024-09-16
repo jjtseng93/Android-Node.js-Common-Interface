@@ -29,44 +29,26 @@
 
 	
 <script>
-async function OnStart()
-{
-prompt=anci.Prompt;
 
-  if(typeof(OnSetup)=="function")
-    OnSetup();
-  else if(anci && typeof(anci)=="object")
+(async ()=>{
+  await anci.waitv(document,'body');
+  await anci.waitv(window,'jQuery');
+  
+  
+  if(!location.pathname.endsWith("/main.app"))
   {
-	anci.AppVersion="1.87";              // The app version for Node.js web/electron APP
-    anci.ProVersion=false;
-    anci.DroidOrientation="Default";    // Orientation for Android DroidScript APP, Available values: Default,Portrait,Landscape,ReversePortrait,ReverseLandscape, or use 0~4
-  }
-	
-  if(window.platform=="android" && typeof(routine_init)=="function")
-    routine_init();
-
-  if(window.platform!="android" && !location.pathname.endsWith("/main.app"))
+    await new Promise(resolve=>
     {
-	 await new Promise(resolve=>
-	 {
-       $.get('UI.html')
-       .then(r=>
-	   {	  
-	     $(document.body).append(r);
-		 resolve();
-	   });      
-	 });
-    }
-
-  if(window.platform!="android")
-    {
-	  if(typeof(OnLoad)=="function")
-        OnLoad();
-	  if(typeof(OnStop)=="function")
-	    window.onbeforeunload=OnStop;
-	}
-}
-
+      $.get("UI.html").then(UI_html=>
+      {
+        $(document.body).append(UI_html);
+        resolve("Appended UI.html");
+      }); // get UI.html then
+	});  //  await promise
+  }  //  pathname not main.app
+  
+  
+})();  //  await for jQuery and body
 
 </script>
 
@@ -74,46 +56,28 @@ prompt=anci.Prompt;
 
 <!--
 Above is for both DroidScript and Web/Electron
-<script src='file:///android_asset/app.js'></script>
+
 Below is for DroidScript Only and will not be integrated into the web page
 -->
-
-
-<script>
-{
-let qarr=location.search.substr(1).split("&")
-.map(ii=>(ii.split("=").map(iii=>decodeURIComponent(iii))));
-
-window.temp_obj=Object.fromEntries(qarr)
-window.passwd=window.temp_obj.passwd;
-window.platform=window.platform || window.temp_obj.platform || "android";
-
-}
-</script>
 	
-
 <script src="nlib/droidscript_api_anci.js"></script>
 <script src="nlib/web_electron_api_anci.js"></script>
 
 <script src="../../nlib/droidscript_api_anci.js"></script>
 <script src="../../nlib/web_electron_api_anci.js"></script>
-	
-	
-<script>
-anci.query=window.temp_obj
-delete window.temp_obj;
-</script>
 
 <script src="Code.js"></script>
 
-<body onload="if(window.platform=='android'){anci.waitv(window,'passwd').then(OnStart);}">
+	
+<body>
 
-<div id="progress_fullscreen" style="padding:50px 10px 50px 10px;text-align:center;position:fixed;left:20%;top:15%;width:60%;display:none;z-index:100;background-color:#333333;color:white;border-radius:20px;font-size:24px;" onclick="this.style.display='none';"></div>
+  <div id="progress_fullscreen" style="padding:50px 10px 50px 10px;text-align:center;position:fixed;left:20%;top:15%;width:60%;display:none;z-index:100;background-color:#333333;color:white;border-radius:20px;font-size:24px;" onclick="this.style.display='none';"></div>
 
-<input id="browser_file_select_dialog" type="file" style="position: absolute; top: -100em">
+  <input id="browser_file_select_dialog" type="file" style="position: absolute; top: -100em">
 
 </body>
 
+	
 </html>
 
 
