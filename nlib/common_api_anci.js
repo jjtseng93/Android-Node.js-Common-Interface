@@ -1230,7 +1230,7 @@ ge=(elementID)=>document.getElementById(elementID);
   await anci.waitv(document,'body');
   await anci.waitv(window,'jQuery');
 
-  if(window.theme_from_app_entry)
+  if(window.theme_from_app_entry && !location.pathname.endsWith("/main.app"))
   {
     await anci.waitv(anci,"ui_resolve");
     await anci.ui_resolve;
