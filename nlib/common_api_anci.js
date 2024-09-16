@@ -1229,7 +1229,12 @@ ge=(elementID)=>document.getElementById(elementID);
 (async ()=>{
   await anci.waitv(document,'body');
   await anci.waitv(window,'jQuery');
-  
+
+  if(window.theme_from_app_entry)
+  {
+    await anci.waitv(anci,"ui_resolve");
+    await anci.ui_resolve;
+  }
 
   if(typeof(OnStop)=="function")
     window.onbeforeunload=OnStop;
