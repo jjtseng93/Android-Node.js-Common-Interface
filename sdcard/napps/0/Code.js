@@ -5,17 +5,26 @@
 var crlf="\r\n";
 
 
-//  **** Setting basic parameters
-function OnSetup()
+function OnStop()
 {
-   document.title="ANCI_Demo";         // The window title for Node.js web/electron APP
-   anci.AppVersion="1.87";              // The app version for Node.js web/electron APP
-   anci.ProVersion=false;
-   anci.DroidOrientation="Default";    // Orientation for Android DroidScript APP, Available values: Default,Portrait,Landscape,ReversePortrait,ReverseLandscape, or use 0~4
-}  //  OnSetup End
+  //alert('exit')
+}
 
 async function OnLoad()
 {
+   document.title="ANCI_Demo";         
+   // The window title for Node.js web/electron APP
+   anci.AppVersion=2;              
+   // The app version for Node.js web/electron APP
+   anci.ProVersion=false;
+   anci.DroidOrientation="Default";
+   /* 
+      Orientation for Android DroidScript APP, 
+      Available values: 
+        Default,Portrait,Landscape,
+        ReversePortrait,ReverseLandscape, 
+        or use number 0~4
+    */
 
 gbcache=
 {
