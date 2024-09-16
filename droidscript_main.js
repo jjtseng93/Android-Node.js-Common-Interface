@@ -95,17 +95,17 @@ function OnStart()
 
     app.AddLayout( lay );
 	
-	web.LoadUrl( "{app_entry}.html" );
-
-    var firstrun=1;
+	
+    web.LoadUrl( `{app_entry}.html?passwd=${window.passwd}` );
+	
     
     web.SetOnProgress(prog=>
     {
-      if(firstrun==1)
+      if(1)
       {
         web.Execute( `prompt = window.anci && window.anci.Prompt;
-	                  window.passwd="${window.passwd}";` );
-	firstrun=0;
+	                  ` );
+	//firstrun=0;
       }
     });
 
