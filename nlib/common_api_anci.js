@@ -616,7 +616,7 @@ anci.ListObjectProperties=function(obj)
           else if(oname=="Array")
             ret.unshift(objO.slice(0,10).join(","));
 		  else if(oname=="Function" || oname=="AsyncFunction")
-			ret.unshift(objO.toString().match(/\(.*?\)/) || "")
+			ret.unshift(objO.toString().slice(0,1000))
 
           ret.unshift(oname || "No Constructor");
           return ret;
