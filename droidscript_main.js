@@ -136,11 +136,15 @@ function web_OnConsole( consoleMsg )
 
   if(consoleMsg.startsWith(window.passwd))
   {
-	  let d=new TextDecoder();
-      let decoded=d.decode(new Uint8Array(consoleMsg.substr(window.passwd.length).split(",")))
-      var obj=JSON.parse(decoded);
+    // let d=new TextDecoder();
+    // let decoded=d.decode(new Uint8Array(cmdstr.split(",")))
+     
+    let cmdstr = consoleMsg.substr(window.passwd.length);
+    let decoded = decodeURI(cmdstr) ;
+	  
+    var obj=JSON.parse(decoded);
 
-	  EvaluateAppCommand(obj,"anci.droidscript_resolves['"+obj.func+"']");
+    EvaluateAppCommand(obj,"anci.droidscript_resolves['"+obj.func+"']");
   }
   else if(!app.IsAPK())	  
     alert("Main: " + consoleMsg);
