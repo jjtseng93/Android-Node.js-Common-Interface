@@ -49,8 +49,8 @@ return new Promise(resolve=>
 		delete anci.droidscript_resolves[uniqueID];
 	}
 	
-	let e=new TextEncoder();
-    console.log(window.passwd+e.encode(data));
+	//let e=new TextEncoder();
+    console.log(window.passwd+encodeURI(data));
  });
   
 }
