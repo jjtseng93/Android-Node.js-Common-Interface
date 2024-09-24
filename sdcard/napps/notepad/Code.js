@@ -3,7 +3,7 @@
 
 //Global Variables
 var hh="\r\n";
-const root_dir="/sdcard/";
+const root_dir="/media/";
 var ruflag=0;
 var rumax=100;
 var ruarr=["Egg0","Egg1","Egg2","Egg3","Egg4","Egg5"];
