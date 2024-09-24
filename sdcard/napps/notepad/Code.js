@@ -121,20 +121,12 @@ var gbcache=
   chi:true,
 };
 
-function OnSetup()
-{
-   document.title="JavaScript Editor";         // The window title for Node.js web/electron APP
-   anci.AppVersion="1.87";              // The app version for Node.js web/electron APP
-   anci.ProVersion=false;
-   anci.DroidOrientation="Default";    // Orientation for Android DroidScript APP, Available values: Default,Portrait,Landscape,ReversePortrait,ReverseLandscape, or use 0~4
-}  //  OnSetup End
-
-
-// **** This function is run when your APP started, if you have vue to initialize, please put it here
 function OnLoad()  
 {
-ge("th").selectionStart=0;
-ge("th").selectionEnd=0;
+  document.title="JavaScript Editor";         // The window title for Node.js web/electron APP
+
+  ge("th").selectionStart=0;
+  ge("th").selectionEnd=0;
 
 new Vue(
 {
@@ -158,32 +150,31 @@ new Vue(
 });
 
 Vue.nextTick(
-function(){
-ge("filep").onkeyup=(e)=>
- {
-  if(e.keyCode==13)
-   {
-    ge("filep").value=ge("filep").value.replace("\n","");
-    openf(ge("filep").value);
-   }
- };
+function()
+{
+  ge("filep").onkeyup=(e)=>
+  {
+      if(e.keyCode==13)
+      {
+        ge("filep").value = ge("filep").value
+                                       .replace("\n","");
+        openf(ge("filep").value);
+      }
+  };
 
-if(anci.query)
-  openf(anci.query.filep);
+  saverudo();
 
-}
-);
+  if(anci?.query?.filep)
+    openf(anci.query.filep);
 
-}
+});  //  Vue nextTick
+
+}  //  OnLoad
+
 
 function runCode(tobj)
 {
-if(!tobj) tobj=th.value;
-if(typeof tobj=="object")
-	tobj=tobj.value;
-try{
-eval(tobj);
-}catch(e){alert("Error from client:\r\n"+e+"\r\n"+e.stack);}
+  anci.eval( tobj?.value );
 }
 
 function ttoph(phrase)
@@ -199,29 +190,33 @@ ge("th").value=(s);
 saverudo();
 }
 
-function saverudo()
+function saverudo(num=1)
 {
-  ruflag++;
-  if(ruflag>rumax) ruflag=0;
   ruarr[ruflag]=ge("th").value;
+  ruflag-=-num;
+
+  if( ruflag > rumax ) 
+    ruflag = (ruflag%rumax)-1;
+  else if(ruflag<0)
+    ruflag=(ruflag%rumax+rumax)%rumax+1;
+
   ge("filep").style.color="red";
 }
 
 function tundo()
 {
-  ruflag--;
-  if(ruflag<0) ruflag=rumax;
+  saverudo(-1);
   ge("th").value=ruarr[ruflag];
   ge("filep").style.color="red";
 }
 
 function tredo()
 {
-  ruflag++;
-  if(ruflag>rumax) ruflag=0;
+  saverudo(1);
   ge("th").value=ruarr[ruflag];
   ge("filep").style.color="red";
 }
+
 
 async function openf(res,enc)
 {
