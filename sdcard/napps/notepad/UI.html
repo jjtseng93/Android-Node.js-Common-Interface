@@ -51,7 +51,7 @@ background-color:lightGray;
 <div id="rootdiv" style="position:relative;margin:5px;">
 
 
-<textarea id="filep" rows="2" style="vertical-align:top;width:calc(100% - 60px);">/sdcard/test.txt</textarea>
+<textarea id="filep" rows="2" style="vertical-align:top;width:calc(100% - 60px);">/media/test.txt</textarea>
 
 <span onclick="anci.selectf([filep.value.substr(0,filep.value.lastIndexOf('/'))]).then(openf);"><i class="far fa-folder-open fa-3x"></i></span>
 
@@ -64,28 +64,65 @@ background-color:lightGray;
 
 <span onclick="anci.SetClipboardText(th.value.substring(th.selectionStart,th.selectionEnd));"><i class="far fa-copy fa-2x"></i></span>&nbsp;
 <span onclick="var sstart=th.selectionStart;anci.SetClipboardText(th.value.substring(sstart,th.selectionEnd));th.value=th.value.substr(0,th.selectionStart)+th.value.substr(th.selectionEnd);saverudo();th.selectionStart=th.selectionEnd=sstart;th.focus();"><i class="fas fa-cut fa-2x"></i></span>&nbsp;
-<span onclick="(async ()=>{edtins(await anci.GetClipboardText());})()"><i class="far fa-clipboard fa-2x"></i></span>&nbsp;
+<span onclick="(async ()=>{edtins(await anci.GetClipboardText());})()"><i class="far fa-clipboard fa-2x"></i></span>
+
+&nbsp;&nbsp;
 
 <span onclick="(async ()=>{ let test_path='/sdcard/~test.html'; await anci.wf(test_path,th.value); anci.openf(test_path)})()"><i class="fab fa-chrome fa-2x"></i></span>
 
-　
+&nbsp;&nbsp;
 
 <span onclick="runCode(ge('th'));"><i class="far fa-play-circle fa-2x"></i></span>
 
 </div>
 
-<textarea autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="th" onkeyup="var c=$(this).attr('data-count');if(c==null || isNaN(c)){c=0;}else{if(c>10){saverudo();c=0;}else{c++;}}$(this).attr('data-count',c);"><html>
+<textarea id="th"
+  autocomplete="off" spellcheck="false"
+  autocorrect="off" autocapitalize="off"
+onkeyup="var c=(this.keyCount || 0)- -1; 
+    if(c>10)
+      {saverudo();c=0;}
+    this.keyCount=c;"
+><html>
 <head>
 <meta name="viewport" content="width=device-width" charset="utf8">
 <meta name="theme-color" content="#87CEEB">
-<title></title>
+<title>Hello</title>
 </head>
 <body onload="">
 @@
 </body>
-</html></textarea>
+</html>
+
+</textarea>
 
 <br>
+
+Multi file 多檔案
+<button onclick="
+      if(!sind.tarr) sind.tarr=[];
+      if(!sind.parr) sind.parr=[];
+      let t=sind.innerText;
+      sind.tarr[t-1]=th.value;
+      sind.parr[t-1]=filep.value;
+      t=(t-1)==0?50:(t-1);
+      th.value=sind.tarr[t-1];
+      filep.value=sind.parr[t-1];
+      sind.innerText=t;" style="">←</button>
+<span id="sind">1</span>/50
+<button onclick="
+      if(!sind.tarr) sind.tarr=[];
+      if(!sind.parr) sind.parr=[];
+      let t=sind.innerText;
+      sind.tarr[t-1]=th.value;
+      sind.parr[t-1]=filep.value;
+      t=(t- -1)==51?1:(t- -1);
+      th.value=sind.tarr[t-1];
+      filep.value=sind.parr[t-1];
+      sind.innerText=t;" style="">→</button>
+
+
+<br><br>
 
 <button onclick="th.value='';saverudo();">Clear</button>
 
