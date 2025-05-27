@@ -5,7 +5,8 @@
   "main": "electron_main.js",
   "scripts": {
     "start": "electron .",
-    "web": "node web_electron_server_anci.js"
+    "web": "node web_electron_server_anci.js",
+    "webs": "node web_electron_server_anci.js --https"
   },
   "keywords": [
     "Electron","DroidScript","Node.js","Express"

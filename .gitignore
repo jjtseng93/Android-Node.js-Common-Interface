@@ -1,6 +1,13 @@
 # My private app
 *Remote TTS Reader*
 
+# Ignore all .crt files
+*.crt
+
+# Ignore all .key files
+*.key
+
+
 # Logs
 logs
 *.log

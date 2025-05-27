@@ -185,8 +185,26 @@ app.post("/storage_proxy",(req,res)=>{
 
 if(global.platform=="web")
 {
-  server=app.listen(web_portn,hostName);//.listen(portn,"::1");
-  csl(`Server Started on ${hostName}, port:`+web_portn+hh);
+
+  if(process.argv[2] == "--https")
+  {
+    var path = require("path");
+    const options = {
+      key: fs.readFileSync(path.join(__dirname, 'server.key')),
+      cert: fs.readFileSync(path.join(__dirname, 'server.crt')),
+    };
+    //  you may test by openssl req -newkey rsa:2048 -nodes -keyout server.key -x509 -days 365 -out server.crt
+
+    server=https.createServer( options, app );
+    server.listen(web_portn,hostName);
+    csl(`Server Started on ${hostName}, port:`+web_portn+hh);
+  }
+  else
+  {
+    server=app.listen(web_portn,hostName);//.listen(portn,"::1");
+    csl(`Server Started on ${hostName}, port:`+web_portn+hh);
+  }
+  
 }
 else if(global.platform=="electron")
 {
