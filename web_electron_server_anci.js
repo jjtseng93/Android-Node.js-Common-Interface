@@ -57,7 +57,7 @@ var app=express();
 fetch=require("node-fetch");
 const util = require('util');
 var sentryr=fs.readFileSync(global.joinp("app_entry_template.html")).toString("utf8");
-var sanci=fs.readFileSync(global.joinp("nlib/web_electron_api_ANCI.js")).toString("utf8");
+var sanci=fs.readFileSync(global.joinp("nlib/web_electron_api_anci.js")).toString("utf8");
 var sdefbox=`
 
 
@@ -165,18 +165,30 @@ app.post("/storage_local",(req,res)=>{
 });
 
 app.post("/storage_proxy",(req,res)=>{
+
+  csl(req.body);
+
   if(req.body.url && req.body.cmd)
   {
     if(req.body.url.constructor.name=="Array")
+    {
+      csl( 'Starts proxying urls' + hh );
+
+      const agent = new https.Agent({
+        rejectUnauthorized: false,
+      });
+    
       fetch(req.body.url.shift(),
             {
+              agent,
               method:"post",
               body:JSON.stringify(req.body),
               headers:{"Content-Type":"application/json"}
             })
       .then(r=>r.text())
       .then(r=>res.end(r))
-      .catch(e=>res.end(e.stack));
+      .catch( e=>{  res.end(e.stack); csl(e.stack);  } );
+    }
   }
   else
     res.end("No proxy URLs found!");
@@ -508,6 +520,26 @@ try{
 
 
 
+/**
+ * 遞迴列出所有檔案的完整路徑
+ * @param {string} dir - 目錄路徑
+ * @returns {Promise<string[]>} - 所有檔案的絕對路徑清單
+ */
+async function lsr(dir) {
+  const entries = await fsp.readdir(dir, { withFileTypes: true });
+  const files = await Promise.all(entries.map(async entry => {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      return await lsr(fullPath); // 遞迴
+    } else {
+      return fullPath; // 是檔案
+    }
+  }));
+  return files.flat(); // 展平成單一陣列
+}
+
+
+
 function objls(obj)
   {
     let objO=obj;
@@ -544,8 +576,10 @@ res.end(str);
 
 async function EvaluateAppCommand(r,res)
 {
-var wfp=util.promisify(fs.writeFile);
-var rf=util.promisify(fs.readFile);
+  var apath = global.joinp(rrp(r.path));
+
+  var wfp=util.promisify(fs.writeFile);
+  var rf=util.promisify(fs.readFile);
 
 var wf=async (path,buff)=>
 {
@@ -557,17 +591,17 @@ var wf=async (path,buff)=>
 
 try{
 
-r.cmd=r.cmd || "";
+r.cmd = r.cmd || "";
 console.log(r.cmd);
 
 if(r.cmd==="app.ReadFile")
 {
-  if(r.encoding=="mem")
+  if(r.encoding == "mem")
   {
     csl("Read From Memory:"+hh+r.path);
     retres( gbcache[r.path] != null ? gbcache[r.path] : "" ,res);
     return true;
-  }  //  if encoding==mem
+  }  //  if encoding == mem
 
   if(!rrp(r.path))
   {
@@ -576,7 +610,7 @@ if(r.cmd==="app.ReadFile")
   }
   else
   {
-    var data = await rf(global.joinp(rrp(r.path)));
+    var data = await rf( apath );
 
     if(!data)
     {
@@ -593,12 +627,12 @@ if(r.cmd==="app.ReadFile")
 }
 else if(r.cmd==="app.ReadFileInBytes")
 {
-    var data = await rf(global.joinp(rrp(r.path)));
+    var data = await rf( apath );
     retres( Array.from(data) , res);
 }
 else if(r.cmd==="app.WriteFileInBytes")
 {
-    await wf( global.joinp(rrp(r.path)),Buffer.from(r.byteArray))
+    await wf(  apath , Buffer.from(r.byteArray) )
     retres("Successfully written"+hh+r.path,res);
 }
 else if(r.cmd==="app.WriteFile")
@@ -627,7 +661,7 @@ else if(r.cmd==="app.WriteFile")
     r.text=r.text || "";
 	
     var fbuff=iconv.encode(r.text,r.encoding);
-    await wf(  global.joinp(rrp(r.path))  , fbuff );
+    await wf(   apath   , fbuff );
 	retres("Successfully written"+hh+r.path,res);
 
   }  //  else encoding!=mem && r.path
@@ -648,7 +682,7 @@ else if(r.cmd==="RealPath")
 }
 else if(r.cmd.startsWith("app.Rename"))
 {
-  r.path=global.joinp(rrp(r.path));
+  r.path= apath ;
   r.npath=global.joinp(rrp(r.npath));
   if(r.path=="" || r.npath=="")
     {
@@ -707,27 +741,27 @@ because ${r.path} dosen't exist!!`,res);
 }
 else if(r.cmd==="app.CopyFile")
 {
-  r.path=global.joinp(rrp(r.path));
+  r.path= apath ;
   r.npath=global.joinp(rrp(r.npath));
   retres(CopyFile(r.path,r.npath,r.overwrite),res);
   return 0;
 }
 else if(r.cmd==="app.CopyFolder")
 {
-  r.path=global.joinp(rrp(r.path));
+  r.path= apath ;
   r.npath=global.joinp(rrp(r.npath));
   retres(await CopyFolder(r.path,r.npath,r.overwrite),res);
   return 0;
 }
 else if(r.cmd==="app.DeleteFile")
 {
-  r.path=global.joinp(rrp(r.path));
+  r.path= apath ;
   retres(DeleteFile(r.path),res);
   return 0;
 }
 else if(r.cmd==="app.DeleteFolder")
 {
-  r.path=global.joinp(rrp(r.path));
+  r.path= apath ;
   if(r.path=="" || r.path=="sdcard")
     {
       retres("Failed to delete"+hh+r.path,res);
@@ -753,7 +787,7 @@ else if(r.cmd===("app.FileExists"))
       retres("Failed to test existence of" +hh+ r.path,res);
       return false;
     }
-  if(fexists(global.joinp(rrp(r.path))))
+  if(fexists( apath ))
   {
     retres("1",res);
     return true;
@@ -768,7 +802,7 @@ else if(r.cmd===("app.FolderExists"))
       retres("Failed to test existence of" +hh+ r.path,res);
       return false;
     }
-  if(dexists(global.joinp(rrp(r.path))))
+  if(dexists( apath ))
   {
     retres("1",res);
     return true;
@@ -778,20 +812,30 @@ else if(r.cmd===("app.FolderExists"))
 }
 else if(r.cmd==="app.ListFolder")
 {
-if(!dexists(global.joinp(rrp(r.path))))
+if(!dexists( apath ))
  {
- retres("Failed to list:"+hh+r.path,res);
- return false;
+   retres("Failed to list:"+hh+r.path,res);
+   return false;
  }
-fs.readdir(global.joinp(rrp(r.path)),(err,files)=>
+ 
+if( ! r.recursive )
+{
+fs.readdir( apath ,(err,files)=>
   {
     if(err) {retres("Failed",res);return false;}
     retres(JSON.stringify(files),res);
   });
 }
+else
+{
+  retres( jss( await lsr( apath ) ) , res);
+}
+  
+  
+}  //  app.ListFolder
 else if(r.cmd==="app.GetFileState")
 {
-  r.path=global.joinp(rrp(r.path));
+  r.path= apath ;
   retres(jss(await fsp.stat(r.path)),res);
   return 0;
 }
@@ -825,7 +869,7 @@ else if(r.cmd==="app.xhr" || r.cmd=="downloadfile")
     fr.then(r=>r.buffer()).then((result)=>
      {
        console.log(r.path);
-       fs.writeFile(global.joinp(rrp(r.path)),result, (err) =>
+       fs.writeFile( apath ,result, (err) =>
        {
          if (err)
          {

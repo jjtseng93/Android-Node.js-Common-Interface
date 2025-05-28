@@ -471,6 +471,35 @@ if(r.cmd==="app.ReadFile")
   retres(  rf( r.path ) , res  ) ;
   return ;
 }
+else if(r.cmd==="app.WriteFile")
+{
+  if(r.encoding=="mem")
+  {
+    csl("Written to memory:"+hh+r.path);
+    gbcache[r.path]=r.text ?? "";
+    retres("Written to memory:"+hh+r.path,res);
+    return true;
+  }
+  else if(r.encoding=="email")
+  {
+      var obj=JSON.parse(r.text);
+      sendmail(obj.to,obj.subject,obj.content,res);
+      return true;
+  }
+  
+  retres(  wf( r.path , r.text , r.encoding ) , res ) ;
+  return ;
+}
+else if(r.cmd==="app.ReadFileInBytes")
+{
+    var ret=rfb(r.path);
+    retres(ret,res);
+}
+else if(r.cmd==="app.WriteFileInBytes")
+{
+    var ret=wfb(r.path);
+    retres(ret,res);
+}
 else if(r.cmd==="SetOnKey")
 {
   app.SetOnKey((...arr)=>retres(arr,"anci.SetOnKey_callback",true))
@@ -553,35 +582,6 @@ else if(r.cmd==="app.TextToSpeech")
   },r.stream,r.locale,r.engine);
   
   tts_running=res;
-}
-else if(r.cmd==="app.WriteFileInBytes")
-{
-    var ret=wfb(r.path);
-    retres(ret,res);
-}
-else if(r.cmd==="app.ReadFileInBytes")
-{
-    var ret=rfb(r.path);
-    retres(ret,res);
-}
-else if(r.cmd==="app.WriteFile")
-{
-  if(r.encoding=="mem")
-  {
-    csl("Written to memory:"+hh+r.path);
-    gbcache[r.path]=r.text ?? "";
-    retres("Written to memory:"+hh+r.path,res);
-    return true;
-  }
-  else if(r.encoding=="email")
-  {
-      var obj=JSON.parse(r.text);
-      sendmail(obj.to,obj.subject,obj.content,res);
-      return true;
-  }
-  
-  retres(  wf( r.path , r.text , r.encoding ) , res ) ;
-  return ;
 }
 else if(r.cmd==="app.MakeFolder")
 {
