@@ -58,9 +58,12 @@ return new Promise(resolve=>
 
 {  //  Network 
 
-anci.RunRemoteApp=async (url)=>
+anci.RunRemoteApp=async (url,param={})=>
 {
   url+='';
+  param='&'+Object.keys(param).map(i=>{
+    return encodeURIComponent(i)+'='+encodeURIComponent(param[i]);
+  }).join('&');
   let pk=await anci.GetPackageName();
   
   if(!url.match(/[\\\/]/g))
@@ -72,10 +75,10 @@ anci.RunRemoteApp=async (url)=>
       url=await anci.RealPath(rp+'/{app_entry}.html');
   }
   
-  if(!confirm("Will now open other APP(inherits permissions) 將開啟其他APP(將繼承權限):\r\n"+url))
+  if(!confirm("Will now open other APP(inherits permissions) 將開啟其他APP(將繼承權限):\r\n"+url+'?passwd=...'+param))
     return;
-  location.href=(url+`?passwd=${window.passwd}`);
-}  //  func remoteApp
+  location.href=(url+`?passwd=${window.passwd+param}`);
+}
 
 anci.remoteapp=anci.RunRemoteApp;
 
@@ -115,7 +118,11 @@ anci.bdlf=anci.BrowserDownloadFile;
 
 anci.OpenFile=async function(filepath,mime)
 {
-  let rfilepath=await anci.realp( filepath )
+  filepath+='';
+  if( !filepath.startsWith('http') && !filepath.startsWith('data:') )
+    var rfilepath=await anci.realp( filepath )
+  else
+    var rfilepath=filepath
   
   alert2(`<iframe style="width:100%;height:85%;
           background-color:white;"
@@ -130,6 +137,7 @@ anci.OpenFile=async function(filepath,mime)
   return await nodeapi(JSON.stringify(sobj),"pm");
 
 }  //  anci.OpenFile
+
 
 }  //  File system operations End
 
