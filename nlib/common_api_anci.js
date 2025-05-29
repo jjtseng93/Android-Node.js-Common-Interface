@@ -847,7 +847,8 @@ anci.Prompt=async (msg,default_value,textAsHtml)=>
   return await alert2(`${textAsHtml?msg:anci.ttoh(msg)}<br><textarea style="width:100%;height:70%" onclick="event.stopPropagation();">${default_value || ""}</textarea>`,true)
 }
 
-prompt=anci.Prompt;
+globalThis.prompt2 = globalThis.prompt;
+globalThis.prompt = anci.Prompt;
 
 anci.showlist=async (title_optional,list,listAsHtml,multi_select)=>{
   if(!list || typeof(list)=='boolean')
