@@ -828,7 +828,12 @@ fs.readdir( apath ,(err,files)=>
 }
 else
 {
-  retres( jss( await lsr( apath ) ) , res);
+  
+    var ret=await lsr( apath );
+    if( Array.isArray(ret) )
+      ret=ret.map( i=>(i+'').replace( apath, r.path ) );
+  
+  retres( jss( ret ) , res);
 }
   
   

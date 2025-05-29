@@ -803,7 +803,11 @@ else if(r.cmd==="app.ListFolder")
 {
   let p=rrp(r.path);
   if(r.recursive)
+  {
     var ret=await lsr(p);
+    if( Array.isArray(ret) )
+      ret=ret.map( i=>(i+'').replace( p, r.path ) );
+  }
   else
     var ret=ls(p);
   if(typeof ret=='string')
