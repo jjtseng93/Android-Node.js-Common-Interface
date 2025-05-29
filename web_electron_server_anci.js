@@ -177,10 +177,12 @@ app.post("/storage_proxy",(req,res)=>{
       const agent = new https.Agent({
         rejectUnauthorized: false,
       });
+      
+      let furl = req.body.url.shift() + "" ;
     
-      fetch(req.body.url.shift(),
+      fetch(  furl  ,
             {
-              agent,
+              agent:  furl.startsWith('https') ? agent : null ,
               method:"post",
               body:JSON.stringify(req.body),
               headers:{"Content-Type":"application/json"}
