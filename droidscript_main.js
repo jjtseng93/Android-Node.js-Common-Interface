@@ -497,7 +497,7 @@ else if(r.cmd==="app.ReadFileInBytes")
 }
 else if(r.cmd==="app.WriteFileInBytes")
 {
-    var ret=wfb(r.path);
+    var ret=wfb(r.path, r.byteArray);
     retres(ret,res);
 }
 else if(r.cmd==="SetOnKey")
