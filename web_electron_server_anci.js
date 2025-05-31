@@ -74,6 +74,7 @@ var sdefbox=`
 
 `;
 var gbcache={};
+var gbsecret={};
 
 var passwd=(()=>
 {
@@ -348,24 +349,36 @@ rl.question(">", (answer) => {
 
   switch(answer)
   {
-    case "r":
+
+  case "r":
 	  process.exit(1);
 	  break;
+
 	case "p":
 	  pack_to_droidscript();
 	  return;
 	  break;
+
 	case "e":
 	  evaluate_stdin();
 	  return;
 	  break;
+
 	case "public":
 	  server.close();
 	  server.listen(web_portn);
 	  break;
+
+  case "permit":
+    if (typeof gbsecret.evalserver === 'function') {
+      gbsecret.evalserver();
+    }
+    break;
+
 	default:
 	  console.log(`Unknown command ${answer}`)
-  }
+
+  }  //  end of switch answer
   
   ask();
 });
@@ -568,12 +581,14 @@ function objls(obj)
 
 function retres(str,res)
 {
-if(!res) res=this;
-if(res==global) return;
-if(typeof(str)!="string") str=util.inspect(str);
-console.log(str.substr(0,1000)+hh);
-res.writeHead(200, {'Content-Type': 'text/plain'});
-res.end(str);
+  if(!res) res=this;
+  if(res==global) return;
+
+  if(typeof(str)!="string") str=util.inspect(str);
+  console.log("\r\nServer reply:\r\n"+str.substr(0,1000)+hh);
+
+  res.writeHead(200, {'Content-Type': 'text/plain'});
+  res.end(str);
 }
 
 async function EvaluateAppCommand(r,res)
@@ -845,6 +860,26 @@ else if(r.cmd==="app.GetFileState")
   r.path= apath ;
   retres(jss(await fsp.stat(r.path)),res);
   return 0;
+}
+else if(r.cmd==="EvalServer")
+{
+  r.param=r.param[0]+'';
+  csl( `即將在伺服器執行以下安全性未知指令，確定嗎？
+        允許的話輸入"permit"`+hh+
+       `Will execute on server the following safety unknown command, are you sure?
+        Type "permit" to allow`+hh+r.param)  
+ 
+  gbsecret.evalserver=async function(){
+    let cmd=`(async ()=>{
+      ${   this.r.param   };
+    })() ;`
+  
+    let ret=await eval(cmd);
+    retres(  ret , this.res  );
+
+  }.bind({r,res});
+
+  return true;
 }
    //xhpost(r.url,r.data,cbf,r.method,"1",r.hhead);
 else if(r.cmd==="app.xhr" || r.cmd=="downloadfile")
