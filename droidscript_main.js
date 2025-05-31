@@ -525,6 +525,9 @@ else if(simple_functions.includes(r.cmd))  //  simple functions
 {
 	if(r.cmd=="OpenUrl" || r.cmd=="DisableKeys")
 	  r.param[0]+='';
+	else if( r.cmd.startsWith('GetFile') )
+	  r.param[0]=rrpath;
+	
 	retres(app[r.cmd](...r.param),res)
 }
 else if(r.cmd==="RealPath")
