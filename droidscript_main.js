@@ -448,8 +448,6 @@ var simple_functions=["GetClipboardText",
 					  "GetSharedText",
 					  "GetSharedFiles",
 					  "DisableKeys","Exit",
-		              "GetFileSize",
-		              "GetFileDate",
 		              "GetPackageName"
 		              ];
 
@@ -525,10 +523,16 @@ else if(simple_functions.includes(r.cmd))  //  simple functions
 {
 	if(r.cmd=="OpenUrl" || r.cmd=="DisableKeys")
 	  r.param[0]+='';
-	else if( r.cmd.startsWith('GetFile') )
-	  r.param[0]=rrpath;
-	
+
 	retres(app[r.cmd](...r.param),res)
+}
+else if(r.cmd==="app.GetFileState")
+{
+  let apath = rrp(r.path) ;
+  //alert(apath);
+  let state={ size:app.GetFileSize(apath), mtimeMs:app.GetFileDate(apath).getTime()}
+  retres( jss(state) , res);
+  return 0;
 }
 else if(r.cmd==="RealPath")
 {

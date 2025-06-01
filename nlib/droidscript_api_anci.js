@@ -160,8 +160,6 @@ let fnarr=["GetClipboardText",
 		   "GetSharedText",
 		   "GetSharedFiles",
 		   "DisableKeys",
-		   "GetFileSize",
-		   "GetFileDate",
 	           "Exit",
 	           "GetPackageName" ];
 for(let i of fnarr)

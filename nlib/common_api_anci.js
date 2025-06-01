@@ -450,9 +450,23 @@ else  //  platform == "android"
 
 anci.selectf=anci.ChooseFile;
 
-anci.filemtime=async (filePath)=>{return await anci.GetFileDate(filePath);};
+anci.GetFileDate=async (filePath)=>
+  {  
+    let mtimeMs=(await anci.GetFileState(filePath)).mtimeMs-0;
+    //alert(mtimeMs);
+    return new Date(mtimeMs.toFixed()-0);  
+  };
 
-anci.filesize=async (filePath)=>{return await anci.GetFileSize(filePath);};
+anci.filemtime=anci.GetFileDate;
+
+anci.GetFileSize=async (filePath)=>
+  {  
+    let fsize=(await anci.GetFileState(filePath)).size-0;
+    return fsize;  
+  };
+
+anci.filesize=anci.GetFileSize;
+
 
 }  //  File system operations End
 
