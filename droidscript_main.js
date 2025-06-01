@@ -466,7 +466,7 @@ if(r.cmd==="app.ReadFile")
     return true;
   }  //  if encoding==mem
 
-  retres(  rf( r.path ) , res  ) ;
+  retres(  rf( r.path , r.encoding ) , res  ) ;
   return ;
 }
 else if(r.cmd==="app.WriteFile")
