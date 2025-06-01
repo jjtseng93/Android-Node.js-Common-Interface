@@ -593,6 +593,11 @@ function retres(str,res)
 
 async function EvaluateAppCommand(r,res)
 {
+  try{
+    MakeFolder("/home");
+    MakeFolder("/bin");
+  }catch(e){ csl(e); }
+
   var apath = global.joinp(rrp(r.path));
 
   var wfp=util.promisify(fs.writeFile);

@@ -330,8 +330,15 @@ anci.stat=anci.GetFileState;
 anci.ChooseFile=async (default_folders,multi_select)=>
 {
 
-var deflist=["/sdcard"];
+var deflist=["/sdcard", "/home", "/bin", "/media"];
 deflist.unshift("<<手動輸入... Manually enter...>>");
+
+if(platform=="android") 
+{  
+  deflist.unshift("Use System Dialog");
+  deflist.push("/android_asset");
+  deflist.push("/private");
+}
 
 if(typeof(default_folders)=="string" && default_folders)
 {
@@ -344,7 +351,14 @@ else if(default_folders && default_folders.constructor==Array)
 
 var selected_file = await anci.showlist("選擇檔案 Select a file",deflist);
 
-if(platform!="android"){
+if(platform=="android" && selected_file=="Use System Dialog")  
+{
+    var sobj={"cmd":"app.ChooseFile",
+                "folder":"" };
+    return await nodeapi(JSON.stringify(sobj),"pm");
+}
+else
+{
 
 var file_selected=async (selected_file)=>{
 
@@ -397,7 +411,8 @@ else if(await anci.hasd(selected_file))
 	{
 		a+='',b+='';
 	    if(a.includes(".")^b.includes("."))
-		  return a.includes(".")?1:-1;
+		      return a.includes(".")?1:-1;
+
 	    return a>b?1:-1;
 	});
 	
@@ -436,17 +451,10 @@ else if(await anci.hasd(selected_file))
 
 return await file_selected(selected_file);
 
-}
-else  //  platform == "android"
-  {
-	if(selected_file.startsWith("<<手"))
-		selected_file=await prompt("請輸入資料夾 Please enter directory name");
-    var sobj={"cmd":"app.ChooseFile",
-                "folder":selected_file };
-    return await nodeapi(JSON.stringify(sobj),"pm");
-  }
+}  //  if platform not android or not use system dialog
 
-}
+
+}  //  end of anci.ChooseFile
 
 anci.selectf=anci.ChooseFile;
 
@@ -657,7 +665,7 @@ anci.ObjectBrowser=async function(rootObj)
     var reso=await anci.showlist("rootObj",children,true);
     var res=$(reso.toString()).data("path");
 
-    console.log(res);
+    //console.log(res);
 
     var prop=null;
     prop=eval(res);
@@ -674,7 +682,7 @@ anci.ObjectBrowser=async function(rootObj)
         reso=await anci.showlist(res,children,true);
         res=$(reso.toString()).data("path");
         if(!res) return;
-        console.log(res)
+        //console.log(res)
         prop=eval(res);
 
         if(prop==null)
@@ -835,14 +843,14 @@ alert2=async (msg,textAsHtml,focus_ok)=>{
           .css("font-size","20px")
           .css("padding","10px")
           .css("overflow","auto")
-          .attr("onclick",`$(this).remove();anci.alert2_resolves[${uniqueID}]();delete anci.alert2_resolves[${uniqueID}];`);
+          .attr("onclick",`$(this).remove();anci.alert2_resolves['${uniqueID}']?.();setTimeout(()=>{delete anci.alert2_resolves['${uniqueID}'];},2000);`);
 
   if(textAsHtml)
     dlg.html(msg);
   else
     dlg[0].innerText=(msg);
 
-  dlg.append(`<div class="text-center"><button onclick="anci.alert2_resolves[${uniqueID}]($(this).parent().parent().find('textarea').val());">OK</button></div>`);
+  dlg.append(`<div class="text-center"><button onclick="anci.alert2_resolves['${uniqueID}']?.($(this).parent().parent().find('textarea').val());">OK</button></div>`);
 
   $("body").append(dlg);
 
@@ -880,9 +888,9 @@ anci.showlist=async (title_optional,list,listAsHtml,multi_select)=>{
 
   if(!list) list=["無項目 No Items"];
 
-  var uniqueID=anci.rndtime();
-
   return (await new Promise(async (resolve)=>{
+
+  var uniqueID=anci.rndtime();
 
   anci.showlist_resolves[uniqueID]=resolve;
   
@@ -895,7 +903,7 @@ anci.showlist=async (title_optional,list,listAsHtml,multi_select)=>{
 <ul class="list-group">
   <li 
   class="list-group-item list-group-item-danger text-center" 
-  onclick="anci.showlist_resolves[${uniqueID}]('');delete anci.showlist_resolves[${uniqueID}];">
+  onclick="anci.showlist_resolves['${uniqueID}']?.('');setTimeout(()=>{delete anci.showlist_resolves['${uniqueID}'];},2000);">
     取消Cancel
   ${!multi_select?"":`
   <textarea style="display:none;">"multi_items"</textarea>
@@ -904,7 +912,7 @@ anci.showlist=async (title_optional,list,listAsHtml,multi_select)=>{
   list.map((i,ind)=>(`
   <li 
   class="list-group-item list-group-item-info"
-  onclick="var res=new String(anci.b64d('${anci.b64e(i)}'));res.index=${ind};anci.showlist_resolves[${uniqueID}](res);delete anci.showlist_resolves[${uniqueID}];">
+  onclick="var res=new String(anci.b64d('${anci.b64e(i)}'));res.index=${ind};anci.showlist_resolves['${uniqueID}'](res);setTimeout(()=>{delete anci.showlist_resolves['${uniqueID}'];},2000);">
   ${
   !multi_select?"":`
   <input type="checkbox" 
@@ -1209,7 +1217,7 @@ anci.loadv=anci.LoadValue;
 
 anci.RandomTimestamp=()=>
 {
-  var min=101,max=999
+  var min=11,max=99
   rnd=Math.floor(Math.random() * (max - min) + min)
   return rnd+""+Date.now();
 }
