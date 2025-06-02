@@ -976,6 +976,10 @@ function writeallbytes(filen,barr)
     var f=app.CreateFile(filen,"rw");
     f.WriteData( barr.join(",") , "int" );
     f.Close();
+    
+    if( fexists( filen ) ) 
+      return "Success: Written to"+hh+filen;
+    return "Failed to write to"+hh+filen;
 }
 
 

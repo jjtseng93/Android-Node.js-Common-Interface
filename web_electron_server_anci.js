@@ -655,7 +655,11 @@ else if(r.cmd==="app.ReadFileInBytes")
 else if(r.cmd==="app.WriteFileInBytes")
 {
     await wf(  apath , Buffer.from(r.byteArray) )
-    retres("Successfully written"+hh+r.path,res);
+    
+    if( fexists( apath ) )
+        retres("Success: Written to"+hh+r.path,res);
+    else
+        retres("Failed to write to"+hh+r.path,res);
 }
 else if(r.cmd==="app.WriteFile")
 {
@@ -684,8 +688,12 @@ else if(r.cmd==="app.WriteFile")
 	
     var fbuff=iconv.encode(r.text,r.encoding);
     await wf(   apath   , fbuff );
-	retres("Successfully written"+hh+r.path,res);
-
+    
+    if( fexists( apath ) )
+	      retres("Success: Written to"+hh+r.path,res);
+	  else    
+	      retres("Failed to write to"+hh+r.path,res);
+	  
   }  //  else encoding!=mem && r.path
 }
 else if(r.cmd==="app.MakeFolder")
