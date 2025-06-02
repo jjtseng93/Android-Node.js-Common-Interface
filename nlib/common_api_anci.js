@@ -425,11 +425,14 @@ else if(await anci.hasd(selected_file))
 	                                    選擇以下多個 Select Multiple Files Below<textarea style="display:none;">"multi_files"</textarea>
 									   </span>`);
     
-    listArray.unshift(`<span data-path="${parentFolder}">${anci.faicon("r,folder-open")}.. 上一層 Parent</span>`);
+    listArray.unshift(`<span data-path="${parentFolder}">${anci.faicon("r,folder-open")}.. 上一層 Parent<textarea style="display:none;">${selected_file}</textarea></span>`);
 	let sel2=await anci.showlist(selected_file,listArray,true);
 	if(!sel2) return "";
 	
     sel2+='';
+  
+    if(sel2===selected_file)
+      return sel2;
 
     if(sel2.startsWith("<span"))
       sel2=$(sel2).data("path");
