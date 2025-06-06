@@ -230,7 +230,16 @@ else if(global.platform=="electron")
 }
 
 
+
+
 var os = require('os');
+
+csl( os.platform(), os.release(), global.platform );
+
+if( !(os.release().toLowerCase().includes("proot") && global.platform=="electron") )
+{
+    
+
 var ifaces = os.networkInterfaces();
 
 Object.keys(ifaces).forEach(function (ifname) {
@@ -252,6 +261,8 @@ Object.keys(ifaces).forEach(function (ifname) {
     ++alias;
   });
 });
+
+}  //  end of printing ip address
 
 csl("");
 
