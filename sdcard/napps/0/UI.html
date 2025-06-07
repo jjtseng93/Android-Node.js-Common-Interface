@@ -90,7 +90,7 @@ async get / set anci.cb: anci.get/setcb()
   <i class="far fa-play-circle fa-3x"></i>
 </span>&nbsp;&nbsp;
 
-<span onclick="anci.selectf().then(r=>(window.r=r,anci.rf(r,'base64'))).then(r=>anci.bdlf(r,window.r.substr(window.r.lastIndexOf('/')+1)));"
+<span onclick="anci.selectf().then(r=>(window.r=r,anci.rf(r,'base64'))).then(r=>anci.bdlf(r,window.r.substr(window.r.lastIndexOf('/')+1))).then(alert2);"
       oncontextmenu="alert('Download file from server')">
   <i class="fas fa-download fa-3x"></i>
 </span>&nbsp;&nbsp;

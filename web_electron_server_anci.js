@@ -486,10 +486,14 @@ function complement_appentry(wkp,appnp)
 	   
    if(!fexists(global.joinp(wkp+"{app_entry}.html")))
      {
-       let icp="";
-       if(  fexists(  global.joinp(wkp+(icp=("Img/"+appnp+".png"))  ))  )
-         sentry=sentry.replace(/\/favicon\.ico/g,icp)
+       let icp1=("Img/app-icon.png");
+       let icp2=("Img/app-icon.ico");
+       if(  fexists(  global.joinp( wkp+icp1 ))  )
+         sentry=sentry.replace(  /\/favicon\.ico/g  , icp1 )
                    .replace(/x\-icon/g,"png");
+       else if(  fexists(  global.joinp( wkp+icp2 ))  )
+         sentry=sentry.replace(  /\/favicon\.ico/g  , icp2 )
+
 	   sentry=sentry.replace("title_string_to_be_replaced",appnp);
 
        fs.writeFileSync(global.joinp(wkp+"{app_entry}.html"),sentry);
