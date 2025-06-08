@@ -11,7 +11,7 @@
 
 <script src="nlib/jquery-3.5.1.min.js"></script>
 <script src="nlib/saveAs.js"></script>
-<script src="nlib/common_api_anci.js"></script>
+<script type="module" src="nlib/anci.js"></script>
 
 <link rel="stylesheet" href="nlib/css/bootstrap.min.css">
 <link rel="stylesheet" href="nlib/css/font_awesome.min.css">
@@ -20,7 +20,7 @@
 	
 <script src="../../nlib/jquery-3.5.1.min.js"></script>
 <script src="../../nlib/saveAs.js"></script>
-<script src="../../nlib/common_api_anci.js"></script>
+<script type="module" src="../../nlib/anci.js"></script>
 
 <link rel="stylesheet" href="../../nlib/css/bootstrap.min.css">
 <link rel="stylesheet" href="../../nlib/css/font_awesome.min.css">
@@ -28,7 +28,7 @@
 
 
 	
-<script>
+<script type="module">
 
 (async ()=>{
   await anci.waitv(document,'body');
@@ -57,18 +57,12 @@
 <!--
 Above is for both DroidScript and Web/Electron
 
-Below is for DroidScript Only and will not be integrated into the web page
+Below is for DroidScript or {app_entry}.html not for /main.app
 -->
-	
-<script src="nlib/droidscript_api_anci.js"></script>
-<script src="nlib/web_electron_api_anci.js"></script>
-
-<script src="../../nlib/droidscript_api_anci.js"></script>
-<script src="../../nlib/web_electron_api_anci.js"></script>
 
 <script src="Code.js"></script>
-
 	
+
 <body>
 
   <div id="progress_fullscreen" style="padding:50px 10px 50px 10px;text-align:center;position:fixed;left:20%;top:15%;width:60%;display:none;z-index:100;background-color:#333333;color:white;border-radius:20px;font-size:24px;" onclick="this.style.display='none';"></div>

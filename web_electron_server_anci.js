@@ -529,8 +529,7 @@ try{
 
    var sentry=complement_appentry(wkp,appnp);
 
-       var squery=`
-	   window.passwd="${passwd}"; anci.query=`+jss(req.query)+";"+hh+hh;
+       var spasswd=`  window.passwd="${passwd}" ; `;
        var stlocurl=req.query.storage_location_url;
        if(stlocurl)
          {
@@ -539,10 +538,16 @@ try{
            sui=sui.substr(0,tindex)+stlocurl+sui.substr(tindex2);
          }
 
-   res.end(sentry+hh+"<scr"+"ipt>"+
-          sanci+squery+s_code+hh+"</scr"+"ipt>"+hh+
-           "<body>"+sdefbox+sui+hh+"</body>"+hh+
-           "</html>");
+   res.end(
+            sentry + hh + hh +
+            "<scr"+"ipt>" + hh +
+            spasswd + hh + hh +
+            s_code + hh + hh +
+            "</scr"+"ipt>" + hh + hh +
+            "<body>" + sdefbox + sui + hh + hh +
+            "</body>" + hh +
+            "</html>"
+          );
 
 }catch(e){res.end(util.inspect(e));}
 

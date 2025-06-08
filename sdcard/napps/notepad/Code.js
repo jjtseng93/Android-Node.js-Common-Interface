@@ -125,8 +125,8 @@ function OnLoad()
 {
   document.title="JavaScript Editor";         // The window title for Node.js web/electron APP
 
-  ge("th").selectionStart=0;
-  ge("th").selectionEnd=0;
+  document.getElementById("th").selectionStart=0;
+  document.getElementById("th").selectionEnd=0;
 
 new Vue(
 {
@@ -152,13 +152,13 @@ new Vue(
 Vue.nextTick(
 function()
 {
-  ge("filep").onkeyup=(e)=>
+  document.getElementById("filep").onkeyup=(e)=>
   {
       if(e.keyCode==13)
       {
-        ge("filep").value = ge("filep").value
+        filep.value = filep.value
                                        .replace("\n","");
-        openf(ge("filep").value);
+        openf(filep.value);
       }
   };
 
@@ -179,20 +179,20 @@ function runCode(tobj)
 
 function ttoph(phrase)
 {
-var s=ge("th").value;
-var reps=ge("retext").value;
-var tind=ge("th").selectionStart-reps.length;
+var s=th.value;
+var reps=document.getElementById("retext").value;
+var tind=document.getElementById("th").selectionStart-reps.length;
 if(tind<0) tind=0;
 tind=s.indexOf(reps,tind);
 if(tind==-1) return 0;
 s=s.substr(0,tind)+phrase+s.substr(tind+reps.length);
-ge("th").value=(s);
+document.getElementById("th").value=(s);
 saverudo();
 }
 
 function saverudo(num=1)
 {
-  ruarr[ruflag]=ge("th").value;
+  ruarr[ruflag]=document.getElementById("th").value;
   ruflag-=-num;
 
   if( ruflag > rumax ) 
@@ -200,21 +200,21 @@ function saverudo(num=1)
   else if(ruflag<0)
     ruflag=(ruflag%rumax+rumax)%rumax+1;
 
-  ge("filep").style.color="red";
+  document.getElementById("filep").style.color="red";
 }
 
 function tundo()
 {
   saverudo(-1);
-  ge("th").value=ruarr[ruflag];
-  ge("filep").style.color="red";
+  document.getElementById("th").value=ruarr[ruflag];
+  document.getElementById("filep").style.color="red";
 }
 
 function tredo()
 {
   saverudo(1);
-  ge("th").value=ruarr[ruflag];
-  ge("filep").style.color="red";
+  document.getElementById("th").value=ruarr[ruflag];
+  document.getElementById("filep").style.color="red";
 }
 
 
@@ -222,8 +222,8 @@ async function openf(res,enc)
 {
 try{
   if(!await anci.FileExists(res)) return 0;
-  ge("th").value=await anci.ReadFile(res,enc);
-  ge("filep").value=res;
+  document.getElementById("th").value=await anci.ReadFile(res,enc);
+  document.getElementById("filep").value=res;
   saverudo();
   filep.style.color='black';
 }catch(e){alert(e.stack);}
@@ -232,7 +232,7 @@ try{
 
 async function pushnote()
 {
-  var s=ge("th").value;
+  var s=document.getElementById("th").value;
   s=s.split('\n').join('\r\n');
   var npath=root_dir+fmdate(new Date())+".txt";
   alert(await anci.WriteFile(npath,s,"utf8"));
@@ -284,7 +284,7 @@ try{
  var rlobj=await anci.ListFolder(dir);
  rlobj=rlobj.sort((itema,itemb)=>itemb.localeCompare(itema));
  rlobj=rlobj.map((res)=>dir+res);
- var tind =rlobj.indexOf(ge("filep").value);
+ var tind =rlobj.indexOf(document.getElementById("filep").value);
 
 if(aind==255) tind=rlobj.length;
 if(aind==0) tind=-1;

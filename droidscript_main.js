@@ -129,7 +129,7 @@ function OnData(isStartup)
     web.Execute("if(typeof OnData=='function') OnData()");
 }
 
-function web_OnConsole( consoleMsg )
+async function web_OnConsole( consoleMsg )
 {
   consoleMsg=consoleMsg || "";
   consoleMsg+="";
@@ -140,9 +140,17 @@ function web_OnConsole( consoleMsg )
     // let decoded=d.decode(new Uint8Array(cmdstr.split(",")))
      
     let cmdstr = consoleMsg.substr(window.passwd.length);
-    let decoded = decodeURI(cmdstr) ;
-	  
-    var obj=JSON.parse(decoded);
+
+    if( ! cmdstr.startsWith("|") )
+    {
+      var decoded = decodeURI(cmdstr) ;
+      var obj=JSON.parse(decoded);
+    }
+    else
+    {
+      let uid=cmdstr.substr(1);
+      var obj = await new Promise( r=>web.Execute(` anci.sobj["${uid}"] `,  r) );
+    }
 
     EvaluateAppCommand(obj,"anci.droidscript_resolves['"+obj.func+"']");
   }
