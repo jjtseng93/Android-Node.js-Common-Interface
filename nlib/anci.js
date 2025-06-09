@@ -12,6 +12,9 @@ let anci={droidscript_resolves:{},alert2_resolves:{},showlist_resolves:{}};
 
 let ge=(elementID)=>document.getElementById(elementID);
 let hh="\r\n";
+let jss=JSON.stringify;
+let jsp=JSON.parse;
+let csl = s=>console.log(s);
 
 let alert2;
 
@@ -93,7 +96,7 @@ anci.xhr=anci.HttpRequest;
 anci.CheckUrlExistence=(url)=>{
   return new Promise(resolve=>{
 
-  $.ajax( { url:url+"" , type:"HEAD", 
+  $.ajax( { url:url+"" , type:"HEAD", dataType:"text",
     success:()=>resolve(true), error:()=>resolve(false)});
 
   });
@@ -478,8 +481,15 @@ anci.GetFileDate=async (filePath)=>
 
 anci.filemtime=anci.GetFileDate;
 
-anci.GetFileSize=async (filePath)=>
+anci.GetFileSize=async (filePath="")=>
   {  
+    filePath+="";
+    
+    if( filePath.startsWith('content:') )
+    {
+      return await anci.urlsize( filePath );
+    }
+    
     let fsize=(await anci.GetFileState(filePath)).size-0;
     return fsize;  
   };
@@ -630,18 +640,18 @@ anci.getdoca=anci.GetDocumentationAbbreviation;
 
 Object.defineProperty(anci,"doca",{get:anci.getdoca});
 
-anci.help=(filterString)=>{
+anci.help=(filterString="")=>{
   if(globalThis.window == globalThis)
   {
-    anci.showlist( anci.getdoc(true,filterString) , true );
+    anci.showlist( anci.getdoc(true,filterString+"") , true );
   }
   else 
   {
     if(typeof process=="object")
       if(process?.argv)
-        filterString=process.argv[2];
+        filterString = filterString || process.argv[2] || "";
 
-    console.log( anci.getdoc(false,filterString) );
+    console.log( anci.getdoc(false,filterString+"") );
   }
 }
 
@@ -817,7 +827,7 @@ anci.EvaluateCommand=(command_text)=>
 
 	    let temp_chain_status=(!!Object.prototype.c);
 	    !temp_chain_status && anci.objchainon();
-	    var csl=console.log,jss=JSON.stringify,jsp=JSON.parse;
+	    //var csl=console.log,jss=JSON.stringify,jsp=JSON.parse;
 
 	    ${t}
 
@@ -1453,6 +1463,107 @@ anci.RunRemoteApp=async (url,param={})=>
 anci.remoteapp=anci.RunRemoteApp;
 
 
+anci.HttpRequestInBytes = (url)=>{
+return new Promise(resolve=>{
+
+const xhr = new XMLHttpRequest();
+xhr.open('GET', url, true);
+xhr.responseType = 'blob'; // 取得 Blob 物件
+
+xhr.onload = function () {
+  if (xhr.status === 200) {
+    const blob = xhr.response; // 這是 Blob
+
+    // 轉成 byte array（使用 FileReader）
+    const reader = new FileReader();
+    reader.onload = function () {
+      const arrayBuffer = reader.result;
+      const uint8Array = new Uint8Array(arrayBuffer);
+      resolve(Array.from(uint8Array) );
+
+      // 可選：處理 uint8Array，例如下載、檢查內容
+    };
+    reader.readAsArrayBuffer(blob);
+  } else {
+    console.error('下載失敗，狀態碼：' + xhr.status);
+  }
+};
+
+xhr.onerror = function () {
+  console.error('請求錯誤');
+};
+
+xhr.send();
+
+});
+};
+
+anci.xhrb=anci.HttpRequestInBytes;
+
+anci.HttpRequestXhr=(url)=>{
+return new Promise(resolve=>{
+$.ajax({
+  url,
+  type: 'Get', 
+  dataType:'text',
+  success: function(data, status, xhr) {
+    resolve(data);
+  },
+  error:e=>resolve("Failed to request")
+});
+});
+};
+
+anci.xhrt=anci.HttpRequestXhr ;
+
+anci.GetUrlDate=(url)=>{
+return new Promise(resolve=>{
+$.ajax({
+  url,
+  type: 'HEAD', // 不下載內容，只取 headers
+  dataType:'text',
+  success: function(data, status, xhr) {
+    let lm = xhr.getResponseHeader('Last-Modified');
+    
+    if(!lm)
+    {
+      resolve("No mtime data in headers");
+      return;
+    }
+    let d=new Date(lm);
+    resolve(d);
+  },
+  error:e=>resolve("Failed to request")
+});
+});
+};
+
+anci.urlmtime=anci.GetUrlDate ;
+
+anci.GetUrlSize=(url)=>{
+return new Promise(resolve=>{
+$.ajax({
+  url,
+  type: 'HEAD', // 不下載內容，只取 headers
+  dataType:'text',
+  success: function(data, status, xhr) {
+    let ctl = xhr.getResponseHeader('Content-Length');
+    
+    if(!ctl)
+    {
+      resolve("No size data in headers");
+      return;
+    }
+    resolve(ctl);
+  },
+  error:e=>resolve("Failed to request")
+});
+});
+};
+
+anci.urlsize=anci.GetUrlSize ;
+
+
 }  //  Network End
 
 
@@ -1485,7 +1596,7 @@ anci.BrowserDownloadFile=async (b64_or_arr,file_name="downloaded.txt")=>
 
 anci.bdlf=anci.BrowserDownloadFile;
 
-anci.OpenFile=async function(filepath,mime)
+anci.OpenFile=async function(filepath,mime,forceSystemOpen)
 {
   filepath+='';
 
@@ -1494,7 +1605,7 @@ anci.OpenFile=async function(filepath,mime)
   else
     var rfilepath=await anci.realp( filepath ) ;
 
-  if(await anci.hasurl(rfilepath))
+  if(await anci.hasurl(rfilepath) && !forceSystemOpen)
   {
 
     await alert2(`<iframe style="width:100%;height:85%;
@@ -1509,7 +1620,7 @@ anci.OpenFile=async function(filepath,mime)
     var sobj={"cmd":"OpenFile",
                 "param":[filepath+'',mime+''] };
 
-    //await anci.sleep(1000);
+    await anci.sleep(1000);
   
     return nodeapi(sobj);
 
@@ -1517,6 +1628,70 @@ anci.OpenFile=async function(filepath,mime)
 }  //  anci.OpenFile
 
 anci.openf=anci.OpenFile;
+
+anci.UpdateAnci=async function(){
+  let res=await anci.showlist( "Which one to update?", 
+                  [ "main(droidscript_main.js -> DroidScript/app_name/app_name.js)" ,
+                     "anci(anci.js -> DroidScript/app_name/nlib/anci.js)"  ] );
+  res+="";
+  
+  let pkn = await anci.getpkn();
+  let a = await anci.appn ; 
+  
+  if( res.startsWith("main") )
+  {
+    if( pkn == "com.smartphoneremote.androidscriptfree" )
+    {
+      
+      //  Update/更新  droidscript_main.js
+      anci.bulf().then(anci.b64arr)
+        .then(JSON.stringify).then(r=>{
+            anci.evalserver(`
+          
+              let barr=${r};
+              writeallbytes( '/sdcard/DroidScript/${a}/${a}.js',barr);
+
+            `);
+        });
+    }  //  if is not apk, developing inside DroidScript
+    else
+    {
+      alert2( "Cannot update main in APK!" );
+    }
+    
+  }
+  else
+  {
+    if( pkn == "com.smartphoneremote.androidscriptfree" )
+    {
+        //  更新anci.js
+  anci.bulf().then(anci.b64arr)
+    .then(JSON.stringify).then(r=>{
+    anci.evalserver(`
+        let barr=${r};
+        writeallbytes( '/sdcard/DroidScript/${a}/nlib/anci.js',barr);
+
+    `);
+    });
+    
+    }  //  if is not apk, developing inside DroidScript
+    else
+    {
+      await alert2( "In APK will update /bin/../../nlib/anci.js and /media/nlib/anci.js" )
+      
+      let brp=await anci.realp('/bin');
+      brp=brp.replace("files/sdcard/napps", "files/nlib/anci.js")
+      
+      let b64 = await anci.bulf() ;
+      alert2( await anci.wf( brp, b64, "base64" ) );
+      alert2( await anci.wf( '/media/nlib/anci.js' , b64, "base64") );
+    }
+  }  //  else selected update anci.js
+  
+
+}  //  anci.UpdateAnci
+
+anci.update=anci.UpdateAnci ;
 
 
 }  //  File system operations End
@@ -1553,6 +1728,12 @@ anci.getappp=anci.GetAppPath;
 anci.getappn=anci.GetAppName;
 anci.getv=anci.GetVersion;
 anci.openu=anci.OpenUrl;
+
+anci.wakelock=anci.PreventScreenLock;
+anci.getsharedt=anci.GetSharedText;
+anci.getsharedf=anci.GetSharedFiles;
+anci.disablekeys=anci.DisableKeys;
+anci.exit=anci.Exit;
 
 anci.getpkn=anci.GetPackageName;
 
@@ -1922,9 +2103,6 @@ else
 
 anci.openf=anci.OpenFile;
 
-anci.GetFileDate=async (filePath)=>{return new Date((await anci.GetFileState(filePath)).mtime);};
-
-anci.GetFileSize=async (filePath)=>{return ((await anci.GetFileState(filePath)).size);};
 
 anci.TextToSpeech=function( rtext,rpitch,rrate)
 {

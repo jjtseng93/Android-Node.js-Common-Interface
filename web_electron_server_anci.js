@@ -57,7 +57,7 @@ var app=express();
 fetch=require("node-fetch");
 const util = require('util');
 var sentryr=fs.readFileSync(global.joinp("app_entry_template.html")).toString("utf8");
-var sanci=fs.readFileSync(global.joinp("nlib/web_electron_api_anci.js")).toString("utf8");
+//var sanci=fs.readFileSync(global.joinp("nlib/web_electron_api_anci.js")).toString("utf8");
 var sdefbox=`
 
 
@@ -130,9 +130,9 @@ app.get(/\/sdcard\/napps\/[^\/]+\/main.app/,(req,res)=>{
   //res.end("<h1>hello app</h1>");
 });
 
-app.use(/\/sdcard\/napps\/[^\/]+\/nlib/,express.static(global.joinp("nlib")));
+app.use( "/nlib" , express.static( global.joinp("nlib") ) );
 
-app.use("/sdcard",express.static(global.joinp("sdcard")));
+app.use( "/sdcard" , express.static( global.joinp("sdcard") ) );
 
 app.use(express.json({limit:"50mb"}));
 

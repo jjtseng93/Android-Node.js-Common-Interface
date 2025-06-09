@@ -112,13 +112,18 @@ function OnStart()
 	
     if( app.IsAPK() )
     {
+      //  Will map to '/storage/emulated/0/Android/data/PackageName/files/nlib 
+      
       if( !app.FolderExists( '/sdcard/nlib' ) )
         app.ExtractAssets('nlib','/sdcard/nlib');
+        
+      app.ExtractAssets(  'notepad' , rrp('/bin/notepad')  );
       
-      let p='/storage/emulated/0/Android/media/'+app.GetPackageName();
+      let p = rrp('/media');
       app.MakeFolder(p);
-      if( !app.FolderExists( p+'/nlib' ) )
-        app.ExtractAssets('nlib',p+'/nlib');
+      if( ! app.FolderExists( p+'/nlib' ) )
+        app.ExtractAssets( 'nlib', p+'/nlib' );
+        
     }
 
 }
@@ -920,26 +925,40 @@ function rrp(istr)
     
                     
     let pv = app.GetPrivateFolder().replace('/files','');
-    app.MakeFolder( '/sdcard/napps' );
-    app.MakeFolder( '/sdcard/ndata' );
+    let sdrp = app.RealPath('/sdcard'); 
+    // /storage/emulated/0/Android/data/package_name/files
     
-    let pattrep=['/sdcard/napps', '/sdcard/napps',
-                          '/sdcard/ndata', '/sdcard/ndata',
-                          '/sd/napps', '/sdcard/napps',
-                          '/sd/ndata', '/sdcard/ndata',
+    let binrp; let homerp;
+    
+    app.MakeFolder( sdrp+'/sdcard' );
+    app.MakeFolder( binrp = (sdrp+'/sdcard/napps') );
+    app.MakeFolder( homerp = (sdrp+'/sdcard/ndata') );
+    
+    let mediarp = sdrp.replace("data", "media")
+                                   .replace("/files", "" );
+    
+    app.MakeFolder( mediarp );
+    app.MakeFolder( mediarp + "/sdcard" );
+    app.MakeFolder( mediarp + "/sdcard/napps" );
+    app.MakeFolder( mediarp + "/sdcard/ndata" );
+    
+    let pattrep=['/sdcard/napps', binrp,
+                          '/sdcard/ndata', homerp,
+                          '/sd/napps', binrp,
+                          '/sd/ndata', homerp,
                            '/sdcard', '/storage/emulated/0',
                            '/sd', '/storage/emulated/0',
                            '/Internal', '/storage/emulated/0',
                            '/storage/emulated/0', '/storage/emulated/0',
-                           '/bin', '/sdcard/napps',
-                           '/apps', '/sdcard/napps',
-                           '/home', '/sdcard/ndata',
-                           '/~', '/sdcard/ndata',
+                           '/bin', binrp,
+                           '/apps', binrp,
+                           '/home', homerp,
+                           '/~', homerp,
                            '/private', pv,
                            pv, pv,
                            /^\/android_asset$/, '/android_asset/',
                            '/android_asset', '/android_asset',
-                           '/media', '/storage/emulated/0/Android/media/'+app.GetPackageName()
+                           '/media', mediarp
                            ];
                            
     let iistr='/'+istr;
