@@ -38,6 +38,57 @@ let nodeapi;
 
 {  //  Network
 
+anci.RunRemoteApp=async (url="",param={})=>
+{
+  url+='';
+  
+  if(!url.match(/[\\\/]/g))
+  {
+    let appname = url ;
+
+    let rp1 = '/bin/'+appname+'/{app_entry}.html' ;
+    let rp2 = '/media/sdcard/napps/' + appname + '/{app_entry}.html' ;
+    
+    if( await anci.hasf( rp1 ) )
+      url = await anci.RealPath( rp1 ) ;
+    else if( await anci.hasf( rp2 ) )
+      url = await anci.RealPath( rp2 ) ;
+    else
+      return "No app "+url+" found in /bin and /media/sdcard/napps" ;
+
+    if( ! (await anci.hasurl(url) ) )
+      url = "../"+appname+"/{app_entry}.html";
+
+    if( ! (await anci.hasurl(url) ) )
+      return "No app "+url+" found!" ;
+  }
+
+  
+
+  let sturl=( anci.query.storage_location_url || (  ge("storage_location_url") && ge("storage_location_url").value  ) ||
+  	    "local"  
+	  ).trim();
+
+  if(sturl=="local") 
+    sturl=location.protocol+"//"+location.host+"/storage_local";
+  
+  let query = anci.genurlp( { passwd, platform, storage_location_url:sturl, ...param } );
+  
+  if(    !confirm("Will now open other APP(inherits permissions) 將開啟其他APP(將繼承權限):\r\n"+url+'?passwd=...&'+
+      anci.genurlp(param)  )    )
+    return false;
+
+  
+
+  if(platform == "android")
+    location.href = (url + "?" + query );
+  else
+    anci.openu( url + "?" + query )
+  return true;
+}
+
+anci.remoteapp=anci.RunRemoteApp;
+
 anci.DownloadFile=(url,file_path,headers,method)=>
 {
   if(typeof headers=="string")
@@ -109,6 +160,150 @@ anci.hasurl=anci.CheckUrlExistence;
 
 
 { //  File system operations
+
+anci.OpenFile=async function(filepath,absext, openInIframe)
+{	
+  if(!filepath) 
+    return false;
+
+  filepath+='';
+
+  if(!(await anci.FileExists(filepath))) 
+    return false;
+
+  var absexists, fext;
+
+  var tind=filepath.lastIndexOf(".");
+  if(tind==-1)
+    fext="No Ext";
+  else
+    fext=filepath.substr(tind).toLowerCase();
+
+if(absext!=null && absext!="" && typeof(absext)==="string")
+{
+  fext=absext.toLowerCase();absexists=true;
+}
+
+var htmlf=".html";
+var txtf=".js/.css/.txt/.c/.json";
+var imgf=".jpg/.jpeg/.png/.gif/.svg/.bmp/.ico";
+var audf=".mp3/.wav";
+var vidf=".mp4/.webm/.ogg";
+
+
+
+if(htmlf.indexOf(fext)+txtf.indexOf(fext)+imgf.indexOf(fext)+audf.indexOf(fext)+vidf.indexOf(fext)==-5 && !absexists || fext==".select")
+{
+  var item = await anci.showlist(filepath+"\n選擇檔案類型： Select file type:","文字 Text,圖片 Image,音樂 Audio,影片 Video,下載 Download" );
+
+  if(item.startsWith("文"))
+    fext = (".txt");
+  else if(item.startsWith("圖"))
+    fext = (".jpg");
+  else if(item.startsWith("音"))
+    fext = (".mp3");
+  else if(item.startsWith("影"))
+    fext = (".mp4");
+  else if(item.startsWith("下"))
+    fext = (".download");
+
+} // if other file types
+
+var nfext = fext;
+
+let writeToNewWindow = async (content) => {
+  if(!openInIframe)
+  {
+    var cwin=anci.openu("about:blank");
+	  cwin.document.write(content);
+
+    return cwin;
+  }
+  else
+  {
+    let ff=$(`<iframe style="width:100%;height:70vh;
+          background-color:white;">
+          </iframe>`);
+
+    ff.attr("srcdoc",content);
+
+    alert2(`<div class="class-for-appending-iframe"></div>`,true,false)
+
+    $(".class-for-appending-iframe").append(ff);
+
+    await anci.sleep(1000);
+
+    return ff[0].contentWindow;
+  }
+  
+}
+
+if(htmlf.indexOf(nfext)!=-1)
+{
+	var t=await anci.rf(filepath);
+
+  writeToNewWindow(t);
+}
+else if(txtf.indexOf(nfext)!=-1)
+{
+
+  if( await anci.hasd("/bin/notepad") )
+  {
+    return await anci.remoteapp("notepad", {filep:filepath} );
+  }
+
+    var t = await anci.ReadFile(filepath);
+    let cwin = await writeToNewWindow("<text"+"area id=\"tall\" style=\"width:100%;height:95%;\"></text"+"area><br><but"+"ton onclick=\"var cwin=window.opener.open(\'about:blank\');cwin.document.write(tall.value);\">Html preview</but"+"ton>");
+    cwin.document.getElementById("tall").value=t;
+
+    return true;
+}
+else if(imgf.indexOf(nfext)!=-1)
+{
+    var b64=await anci.ReadFile(filepath,"base64");
+    var datauri="data:image/"+nfext.substr(1)+";base64,"+b64;
+    writeToNewWindow(`<img src="${datauri}">`);
+
+    return true;
+}
+else if(audf.indexOf(nfext)!=-1)
+{
+    if(nfext==".mp3") nfext=".mpeg";
+    var b64=await anci.ReadFile(filepath,"base64");
+
+    var datauri="data:audio/"+nfext.substr(1)+";base64,"+b64;
+    writeToNewWindow(`<audio controls="controls" 
+                        autobuffer="autobuffer">
+                        <source src="${datauri}" />
+                      </audio>`);
+    
+    return true;
+}
+else if((vidf).indexOf(nfext)!=-1)
+{
+  var b64 = await anci.ReadFile(filepath,"base64");
+  var datauri="data:video/"+nfext.substr(1)+";base64,"+b64;
+
+  writeToNewWindow(`<video controls>
+                      <source src="${datauri}">
+                    </video>`);
+
+  return true;
+}
+else //(nfext===".download" or more)
+{
+    var b64=await anci.ReadFile(filepath,"base64");
+    var tind=filepath.lastIndexOf("/")+1;
+    return await anci.bdlf(b64,filepath.substr(tind));
+}
+
+
+
+};
+
+anci.openf=anci.OpenFile;
+
+anci.OpenFileBrowser=anci.OpenFile;
 
 anci.BrowserUploadFile = async (overwrite, download_path="/sdcard/Download")=>
 {
@@ -1459,32 +1654,7 @@ nodeapi=anci.dsapi;
 {  //  Network 
 
 
-anci.RunRemoteApp=async (url,param={})=>
-{
-  url+='';
-  param='&'+Object.keys(param).map(i=>{
-    return encodeURIComponent(i)+'='+encodeURIComponent(param[i]);
-  }).join('&');
-  let pk=await anci.GetPackageName();
-  
-  if(!url.match(/[\\\/]/g))
-  {
-    let rp='';
-    if( await anci.hasd( rp = '/bin/'+url) )
-      url=await anci.RealPath(rp+'/{app_entry}.html');
-    else if( await anci.hasd( rp = '/sd/Android/media/'+pk+'/napps/'+url ) )
-      url=await anci.RealPath(rp+'/{app_entry}.html');
-  }
 
-  
-  if(!confirm("Will now open other APP(inherits permissions) 將開啟其他APP(將繼承權限):\r\n"+url+'?passwd=...'+param))
-    return false;
-
-  location.href=(url+`?passwd=${window.passwd+param}`);
-  return true;
-}
-
-anci.remoteapp=anci.RunRemoteApp;
 
 
 anci.HttpRequestInBytes = (url)=>{
@@ -1642,6 +1812,10 @@ anci.OpenFile=async function(filepath,mime,forceSystemOpen)
           </iframe>` , true,false );
     return "Success: Opened" + hh + rfilepath;    
 
+  }
+  else if( await anci.hasf(rfilepath) && !forceSystemOpen )
+  {
+    return await anci.OpenFileBrowser(rfilepath,null,true);
   }
   else 
   {
@@ -1924,24 +2098,7 @@ nodeapi=anci.nodeapi;
 
 {  //  Network 
 
-anci.RunRemoteApp=(url,param={})=>
-{
-  param='&'+Object.keys(param).map(i=>{
-    return encodeURIComponent(i)+'='+encodeURIComponent(param[i]);
-  }).join('&');
-  url+='';
-  
-  if( !url.match(/[\\\/]/g) )
-    url='/sdcard/napps/'+url+'/main.app';
-
-  if(!confirm("Will now open other APP(inherits permissions) 將開啟其他APP(將繼承權限):\r\n"+url+'?passwd=...'+param))
-    return false;
-
-  anci.OpenUrl(url+`?platform=${window.platform}&passwd=${window.passwd}&storage_location_url=${location.protocol+"//"+location.host+"/storage_local"+param}`);
-  return true;
-}
-
-anci.remoteapp=anci.RunRemoteApp;
+//  Currently no network functions peculiar to NodeJs/Electron client
 
 }  //  Network End
 
@@ -2022,115 +2179,7 @@ anci.OpenUrl=function(url)
 
 anci.openu=anci.OpenUrl;
 
-anci.OpenFile=async function(filepath,absext)
-{	
-if(!filepath) return false;
-filepath+='';
 
-if(!(await anci.FileExists(filepath))) return false;
-var absexists;
-var tind=filepath.lastIndexOf(".");
-if(tind==-1)
-var fext="No Ext";
-else
-var fext=filepath.substr(tind).toLowerCase();
-
-if(absext!=null && absext!="" && typeof(absext)==="string")
-{
-fext=absext.toLowerCase();absexists=true;
-}
-
-var htmlf=".html";
-var txtf=".js/.css/.txt/.c/.json";
-var imgf=".jpg/.jpeg/.png/.gif/.svg/.bmp/.ico";
-var audf=".mp3/.wav";
-var vidf=".mp4/.webm/.ogg";
-
-var cbf=async function(nfext)
-{ // cbf start
-
-if(htmlf.indexOf(nfext)!=-1)
-{
-	var t=await anci.rf(filepath);
-	var cwin=anci.openu("about:blank");
-	cwin.document.write(t);
-}
-else if(txtf.indexOf(nfext)!=-1)
-{
-
-    if( await anci.hasd("/bin/notepad") )
-    {
-      return await anci.remoteapp("notepad", {filep:filepath} );
-    }
-
-    var t = await anci.ReadFile(filepath);
-    var cwin=anci.openu("about:blank");
-    cwin.document.write("<text"+"area id=\"tall\" style=\"width:100%;height:95%;\"></text"+"area><br><but"+"ton onclick=\"var cwin=window.opener.open(\'about:blank\');cwin.document.write(tall.value);\">Html preview</but"+"ton>");
-    cwin.document.getElementById("tall").value=t;
-
-    return true;
-}
-else if(imgf.indexOf(nfext)!=-1)
-{
-    var b64=await anci.ReadFile(filepath,"base64");
-    var datauri="data:image/"+nfext.substr(1)+";base64,"+b64;
-    var cwin=anci.openu("about:blank");
-    cwin.document.write("<img src=\""+datauri+"\">");
-
-    return true;
-}
-else if(audf.indexOf(nfext)!=-1)
-{
-    if(nfext==".mp3") nfext=".mpeg";
-    var b64=await anci.ReadFile(filepath,"base64");
-
-    var datauri="data:audio/"+nfext.substr(1)+";base64,"+b64;
-    var cwin=anci.openu();
-    cwin.document.write("<audio controls=\"controls\" autobuffer=\"autobuffer\"><source src=\""+datauri+"\" /></audio>");
-    //cwin.document.write("<video controls><source src=\""+datauri+"\"></video>");
-
-    return true;
-}
-else if((vidf).indexOf(nfext)!=-1)
-{
-    var b64=await anci.ReadFile(filepath,"base64");
-    var datauri="data:video/"+nfext.substr(1)+";base64,"+b64;
-    var cwin=anci.openu("about:blank");
-    cwin.document.write("<video controls><source src=\""+datauri+"\"></video>");
-
-    return true;
-}
-else //(nfext===".download" or more)
-{
-    var b64=await anci.ReadFile(filepath,"base64");
-    var tind=filepath.lastIndexOf("/")+1;
-    return await anci.bdlf(b64,filepath.substr(tind));
-}
-
-} // cbf ends
-
-if(htmlf.indexOf(fext)+txtf.indexOf(fext)+imgf.indexOf(fext)+audf.indexOf(fext)+vidf.indexOf(fext)==-5 && !absexists || fext==".select")
-{
-var item=await anci.CreateListDialog(filepath+"\n選擇檔案類型： Select file type:","文字 Text,圖片 Image,音樂 Audio,影片 Video,下載 Download",null,null,"pm");
-
-  if(item.startsWith("文"))
-    return cbf(".txt");
-  else if(item.startsWith("圖"))
-    return cbf(".jpg");
-  else if(item.startsWith("音"))
-    return cbf(".mp3");
-  else if(item.startsWith("影"))
-    return cbf(".mp4");
-  else if(item.startsWith("下"))
-    return cbf(".download");
-
-} // if other file types
-else
-  return cbf(fext);
-
-};
-
-anci.openf=anci.OpenFile;
 
 
 anci.TextToSpeech=function( rtext,rpitch,rrate)
