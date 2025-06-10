@@ -76,7 +76,7 @@ anci.HttpRequest=(method_optional,url,encoding,data,headers)=>
 	  headers=data
 	  data=encoding
 	  encoding=url;
-	  url=method_optional
+	  url = method_optional + "" ;
 	  method_optional="GET"
   }
 
@@ -110,61 +110,70 @@ anci.hasurl=anci.CheckUrlExistence;
 
 { //  File system operations
 
-anci.BrowserUploadFile=(overwrite)=>
+anci.BrowserUploadFile = async (overwrite, download_path="/sdcard/Download")=>
 {
-	if(!["true","false"].includes(overwrite+''))
-	    overwrite="pm";
-	
-if(!window.browser_file_select_dialog)
-  $("body").append(anci._bfsd);
+    if( download_path.slice(-1) != "/" )
+        download_path += "/" ;
+    const dlp = download_path ;
 
-return new Promise(resolve=>{
-browser_file_select_dialog.onchange=function()
-  {
+    if(!window.browser_file_select_dialog)
+        $("body").append(anci._bfsd);
+
+    await new Promise(resolve=>{
+        browser_file_select_dialog.onchange=resolve;
+        browser_file_select_dialog.click();
+    });
+
     var fr=new FileReader();
-    fr.onload=function()
-      {
-        if(overwrite=="pm")
-          overwrite=resolve;
-        else
-          {
-            var s=overwrite+'';
-            overwrite=async function(res)
-              {
-                if(s=='false')
-                  {
-                    while(await anci.FileExists("/sdcard/Download/"+res.fname))
-                      {
-                        var tind=res.fname.lastIndexOf(".");
-                        if(tind===-1)
-                          res.fname+="-new";
-                        else
-                          res.fname=res.fname.substr(0,tind)+"_1"+res.fname.substr(tind);
-                      }
-                  }
-                resolve(await anci.WriteFile("/sdcard/Download/"+res.fname,res,"base64"));
-              };
-          }
+    await new Promise(resolve=>{
+     fr.onload=resolve;
+     fr.readAsDataURL(browser_file_select_dialog.files[0]);
+    });
 
-        if(fr.result==null) fr.result="";
-		var b64s=new String(fr.result.substr(fr.result.indexOf("base64,")+7));
-		b64s.fname=browser_file_select_dialog.files[0].name;
-        overwrite(b64s);
-        browser_file_select_dialog.onchange=null;
-        browser_file_select_dialog.value=null;
-      };
-    fr.readAsDataURL(browser_file_select_dialog.files[0]);
-  };
-browser_file_select_dialog.click();
-});
-}
+    if( ! fr.result ) return "Failed to read file";
+    
+    let b64s = (fr.result+"")
+                     .substr(  fr.result.indexOf( "base64," ) + 7  );
+    b64s = new String( b64s );
+
+    b64s.fname = browser_file_select_dialog
+                              .files[0].name ; 
+
+    browser_file_select_dialog.onchange=null;
+    browser_file_select_dialog.value=null;
+
+    if(  typeof overwrite != "boolean"  )
+        return b64s ; 
+    else  //  overwrite is boolean
+    {
+      if( overwrite == false )
+      {
+        if( ! await anci.hasd( download_path ) )
+          return "Failed: No such folder" ;
+
+        while(  await anci.hasf( dlp + b64s.fname )  )
+        {
+          var tind = b64s.fname.lastIndexOf(".");
+          if( tind===-1 )
+              b64s.fname += "_1";
+          else
+              b64s.fname = b64s.fname.substr(0,tind) +
+                             "_1" + b64s.fname.substr(tind) ;
+        }  //  while filename exists
+      }  //  if overwrite false
+
+  return await anci
+                        .wf( dlp+b64s.fname, b64s+"", "base64" );
+
+    }  //  overwrite is boolean
+}  //  bulf ends
 
 anci.bulf=anci.BrowserUploadFile;
 
 anci.ReadFileInBytes=function(filePath)
 {
   var sobj={"cmd":"app.ReadFileInBytes",
-                "path":filePath,
+                "path": (filePath || "")+"",
            };
 
   return nodeapi( sobj ) ;
@@ -205,7 +214,7 @@ anci.WriteFile=function(filePath,textToWrite,textEncoding)
 
   var sobj={"cmd":"app.WriteFile",
                 "path":filePath,
-                "text":textToWrite,
+                "text":textToWrite+"",
                 "encoding":textEncoding };
   return nodeapi( sobj ) ;
 };
@@ -458,7 +467,10 @@ else if(await anci.hasd(selected_file))
 	//alert(selected_file);
 	return await file_selected(selected_file);
 }
-
+else if( selected_file == "/" )
+{
+  return await anci.selectf(default_folders,multi_select);
+}
 
 
 };
@@ -474,7 +486,7 @@ anci.selectf=anci.ChooseFile;
 
 anci.GetFileDate=async (filePath)=>
   {  
-    let mtimeMs=(await anci.GetFileState(filePath)).mtimeMs-0;
+    let mtimeMs=(await anci.GetFileState(filePath+'')).mtimeMs-0;
     //alert(mtimeMs);
     return new Date(mtimeMs.toFixed()-0);  
   };
@@ -502,7 +514,7 @@ anci.filesize=anci.GetFileSize;
 anci.EvalServer=function(command_to_evaluate)
 {
   var sobj={"cmd":"EvalServer",
-                "param":[command_to_evaluate] };
+                "param":[command_to_evaluate+""] };
   return nodeapi( sobj ) ;
 };
   
@@ -686,7 +698,10 @@ anci.ListObjectProperties=function(obj)
           if(oname=="Number" || oname=="Boolean")
             ret.unshift(objO);
           else if(oname=="String")
+          {
+            ret = ret.filter( i=> isNaN(i) );
             ret.unshift(objO.substr(0,1000));
+          }
           else if(oname=="Array")
             ret.unshift(objO.slice(0,10).join(","));
 		  else if(oname=="Function" || oname=="AsyncFunction")
@@ -700,6 +715,9 @@ anci.objls=anci.ListObjectProperties;
 
 anci.ObjectBrowser=async function(rootObj)
   {
+    const eu=encodeURIComponent;
+    const du=decodeURIComponent;
+  
     if(!rootObj) return;
 
     let prt=(s)=>{
@@ -712,7 +730,7 @@ anci.ObjectBrowser=async function(rootObj)
 
     let children=anci.objls(rootObj);
 
-    children=children.map(i=>(`<span data-path="rootObj[`+"`"+i+"`"+`]">${i}</span>`));
+    children=children.map(i=>(`<span data-path="rootObj[decodeURIComponent(`+"`"+eu(i)+"`"+`)]">${anci.ttoh(i)}</span>`));
 
     var reso=await anci.showlist("rootObj",children,true);
     var res=$(reso.toString()).data("path");
@@ -728,7 +746,7 @@ anci.ObjectBrowser=async function(rootObj)
       {
 
         let children=anci.objls(prop);
-        children=children.map(i=>(`<span data-path="${res}[`+"`"+i+"`"+`]">${i}</span>`));
+        children=children.map(i=>(`<span data-path="${res}[decodeURIComponent(`+"`"+eu(i)+"`"+`)]">${anci.ttoh(i)}</span>`));
         children.unshift(`<span data-path="${prt(res)}">上一層 Parent</span>`);
 
         reso=await anci.showlist(res,children,true);
@@ -770,7 +788,8 @@ let chainf=function(func,spread)
 Object.defineProperty(Object.prototype,"c",{
   value:chainf,
   configurable:true,
-  enumerable:false
+  enumerable:false,
+  writable:true
 })
 
 
@@ -784,7 +803,8 @@ let branchf=function(func)
 Object.defineProperty(Object.prototype,"b",{
   value:branchf,
   configurable:true,
-  enumerable:false
+  enumerable:false,
+  writable:true
 })
 
 
@@ -798,7 +818,8 @@ let mergef=function(func)
 Object.defineProperty(Object.prototype,"m",{
   value:mergef,
   configurable:true,
-  enumerable:false
+  enumerable:false,
+  writable:true
 })
 
 
@@ -1145,32 +1166,32 @@ anci.BarrToBase64=(str)=>{
 
 anci.arrb64=anci.BarrToBase64;
 
-anci.Base64Encode=(str)=>{
+anci.Base64Encode=(str="")=>{
 let e=new TextEncoder();
-return anci.arrb64(e.encode(str));
+return anci.arrb64(e.encode(str+""));
 }
 
 anci.b64e=anci.Base64Encode;
 
-anci.Base64Decode=(str)=>{
+anci.Base64Decode=(str="")=>{
 let d=new TextDecoder();
-return d.decode(new Uint8Array(anci.b64arr(str)));
+return d.decode(new Uint8Array(anci.b64arr(str+"")));
 }
 
 anci.b64d=anci.Base64Decode;
 
 //  Text <-> Html
 
-anci.TextToHtml=(text)=>
+anci.TextToHtml=(text="")=>
 {
   var cvt=$("<div>")
-  cvt[0].innerText=text
+  cvt[0].innerText=text+""
   return cvt.html()
 }
 
 anci.ttoh=anci.TextToHtml;
 
-anci.HtmlToText=(html)=>
+anci.HtmlToText=(html="")=>
 {
   html+='';
   html = html.replace(/<style([\s\S]*?)<\/style>/gi, '');
@@ -1291,9 +1312,12 @@ anci.LoadValue = async (optional_key_name,
     };
 anci.loadv=anci.LoadValue;
 
-anci.RandomTimestamp=()=>
+anci.RandomTimestamp=(digits_of_rnd=2)=>
 {
-  var min=11,max=99
+  if( isNaN(digits_of_rnd) ) digits_of_rnd=2;
+  var min = "1".repeat(digits_of_rnd)-0;
+  var max = "9".repeat(digits_of_rnd)-0;
+  
   var rnd=Math.floor(Math.random() * (max - min) + min)
   return rnd+""+Date.now();
 }
@@ -1464,6 +1488,7 @@ anci.remoteapp=anci.RunRemoteApp;
 
 
 anci.HttpRequestInBytes = (url)=>{
+  url = ( url || "" ) + "";
 return new Promise(resolve=>{
 
 const xhr = new XMLHttpRequest();
@@ -1501,6 +1526,7 @@ xhr.send();
 anci.xhrb=anci.HttpRequestInBytes;
 
 anci.HttpRequestXhr=(url)=>{
+  url = ( url || "" ) + "";
 return new Promise(resolve=>{
 $.ajax({
   url,
@@ -1517,6 +1543,7 @@ $.ajax({
 anci.xhrt=anci.HttpRequestXhr ;
 
 anci.GetUrlDate=(url)=>{
+  url = ( url || "" ) + "";
 return new Promise(resolve=>{
 $.ajax({
   url,
@@ -1541,6 +1568,7 @@ $.ajax({
 anci.urlmtime=anci.GetUrlDate ;
 
 anci.GetUrlSize=(url)=>{
+  url = ( url || "" ) + "";
 return new Promise(resolve=>{
 $.ajax({
   url,
@@ -1921,10 +1949,10 @@ anci.remoteapp=anci.RunRemoteApp;
 { //  File system operations
 
 
-anci.BrowserDownloadFile=(b64_or_arr,file_name)=>
+anci.BrowserDownloadFile=(b64_or_arr,file_name="downloaded.txt")=>
 {
-  if(typeof(b64_or_arr)=="string")
-    var barr=new Uint8Array(anci.b64arr(b64_or_arr));
+  if(typeof(b64_or_arr)=="string" || b64_or_arr?.[0]?.length>0)
+    var barr=new Uint8Array(anci.b64arr(b64_or_arr+""));
   else
     var barr=new Uint8Array(b64_or_arr);
 
@@ -1979,6 +2007,7 @@ Object.defineProperty(anci,"ver",{get:anci.getv});
 
 anci.OpenUrl=function(url)
 {
+  url = ( url || "" ) + "";
 	if(window.platform == "electron")
 	{
 	  let upmost=window;
