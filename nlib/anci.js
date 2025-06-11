@@ -144,6 +144,61 @@ anci.HttpRequest=(method_optional,url,encoding,data,headers)=>
 
 anci.xhr=anci.HttpRequest;
 
+anci.HttpRequestInBytes = (url)=>{
+  url = ( url || "" ) + "";
+return new Promise(resolve=>{
+
+const xhr = new XMLHttpRequest();
+xhr.open('GET', url, true);
+xhr.responseType = 'blob'; // 取得 Blob 物件
+
+xhr.onload = function () {
+  if (xhr.status === 200) {
+    const blob = xhr.response; // 這是 Blob
+
+    // 轉成 byte array（使用 FileReader）
+    const reader = new FileReader();
+    reader.onload = function () {
+      const arrayBuffer = reader.result;
+      const uint8Array = new Uint8Array(arrayBuffer);
+      resolve(Array.from(uint8Array) );
+
+      // 可選：處理 uint8Array，例如下載、檢查內容
+    };
+    reader.readAsArrayBuffer(blob);
+  } else {
+    console.error('下載失敗，狀態碼：' + xhr.status);
+  }
+};
+
+xhr.onerror = function () {
+  console.error('請求錯誤');
+};
+
+xhr.send();
+
+});
+};
+
+anci.xhrb=anci.HttpRequestInBytes;
+
+anci.HttpRequestXhr=(url)=>{
+  url = ( url || "" ) + "";
+return new Promise(resolve=>{
+$.ajax({
+  url,
+  type: 'Get', 
+  dataType:'text',
+  success: function(data, status, xhr) {
+    resolve(data);
+  },
+  error:e=>resolve("Failed to request")
+});
+});
+};
+
+anci.xhrt=anci.HttpRequestXhr ;
+
 anci.CheckUrlExistence=(url)=>{
   return new Promise(resolve=>{
 
@@ -247,13 +302,13 @@ if(htmlf.indexOf(nfext)!=-1)
 else if(txtf.indexOf(nfext)!=-1)
 {
 
-  if( await anci.hasd("/bin/notepad") )
+  if( await anci.hasd("/bin/notepad") && !openInIframe)
   {
     return await anci.remoteapp("notepad", {filep:filepath} );
   }
 
     var t = await anci.ReadFile(filepath);
-    let cwin = await writeToNewWindow("<text"+"area id=\"tall\" style=\"width:100%;height:95%;\"></text"+"area><br><but"+"ton onclick=\"var cwin=window.opener.open(\'about:blank\');cwin.document.write(tall.value);\">Html preview</but"+"ton>");
+    let cwin = await writeToNewWindow("<text"+"area id=\"tall\" style=\"width:100%;height:70vh;\"></text"+"area><br><but"+"ton onclick=\"var cwin=window.opener.open(\'about:blank\');cwin.document.write(tall.value);\">Html preview</but"+"ton>");
     cwin.document.getElementById("tall").value=t;
 
     return true;
@@ -344,7 +399,12 @@ anci.BrowserUploadFile = async (overwrite, download_path="/sdcard/Download")=>
       if( overwrite == false )
       {
         if( ! await anci.hasd( download_path ) )
-          return "Failed: No such folder" ;
+        {
+          await anci.mkdir( download_path );
+
+          if( ! await anci.hasd( download_path ) )
+            return "Failed: No such folder" + hh + download_path ;
+        }
 
         while(  await anci.hasf( dlp + b64s.fname )  )
         {
@@ -958,7 +1018,7 @@ anci.ObjectBrowser=async function(rootObj)
       }
     }
     else
-      return objBrowser(rootObj);
+      return anci.objbs(rootObj);
 }
 
 anci.objbs=anci.ObjectBrowser;
@@ -1657,60 +1717,7 @@ nodeapi=anci.dsapi;
 
 
 
-anci.HttpRequestInBytes = (url)=>{
-  url = ( url || "" ) + "";
-return new Promise(resolve=>{
 
-const xhr = new XMLHttpRequest();
-xhr.open('GET', url, true);
-xhr.responseType = 'blob'; // 取得 Blob 物件
-
-xhr.onload = function () {
-  if (xhr.status === 200) {
-    const blob = xhr.response; // 這是 Blob
-
-    // 轉成 byte array（使用 FileReader）
-    const reader = new FileReader();
-    reader.onload = function () {
-      const arrayBuffer = reader.result;
-      const uint8Array = new Uint8Array(arrayBuffer);
-      resolve(Array.from(uint8Array) );
-
-      // 可選：處理 uint8Array，例如下載、檢查內容
-    };
-    reader.readAsArrayBuffer(blob);
-  } else {
-    console.error('下載失敗，狀態碼：' + xhr.status);
-  }
-};
-
-xhr.onerror = function () {
-  console.error('請求錯誤');
-};
-
-xhr.send();
-
-});
-};
-
-anci.xhrb=anci.HttpRequestInBytes;
-
-anci.HttpRequestXhr=(url)=>{
-  url = ( url || "" ) + "";
-return new Promise(resolve=>{
-$.ajax({
-  url,
-  type: 'Get', 
-  dataType:'text',
-  success: function(data, status, xhr) {
-    resolve(data);
-  },
-  error:e=>resolve("Failed to request")
-});
-});
-};
-
-anci.xhrt=anci.HttpRequestXhr ;
 
 anci.GetUrlDate=(url)=>{
   url = ( url || "" ) + "";
