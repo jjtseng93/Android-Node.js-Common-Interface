@@ -7,7 +7,10 @@
 <link rel="shortcut icon" href="Img/app-icon.ico" type="image/x-icon"/>
 <title>notepad</title>
 
-	
+<script>
+  if(!window.anci) window.anci={};
+  anci.passwd='';
+</script>	
 
 <script src="nlib/jquery-3.5.1.min.js"></script>
 <script src="nlib/saveAs.js"></script>
@@ -37,14 +40,37 @@
   
   if(!location.pathname.endsWith("/main.app"))
   {
-    anci.ui_resolve = new Promise(resolve=>
+    
+    anci.ui_resolve = new Promise(async (resolve)=>
     {
-      $.get("UI.html").then(UI_html=>
+      function loadui(url)
       {
-        $(document.body).append(UI_html);
-        resolve("Appended UI.html");
-      }); // get UI.html then
-	});  //  await promise
+        $.get( url ).then(UI_html=>
+        {
+          $(document.body).append(UI_html);
+          resolve("Appended UI.html");
+        }); // get UI.html then
+      }
+      
+      let uip = "UI.html" ;
+
+      if( await anci.hasurl( uip ) )
+        loadui(uip);
+      else if( await anci.hasurl( uip = "index.html" ) )
+        loadui(uip);
+      else if( await anci.hasurl( uip = "main.html" ) )
+        loadui(uip);
+      else if( await anci.hasurl( uip = "app.html" ) )
+        loadui(uip);
+      else if( await anci.hasurl( uip = location.pathname.split("/").at(-2) + ".html" ) )
+        loadui(uip);
+      else
+      {
+        $(document.body).append("<h1>No UI html found</h1>");
+        resolve("No UI html found");
+      }
+	  });  //  await promise
+
   }  //  pathname not main.app
   
   

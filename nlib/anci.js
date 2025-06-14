@@ -8,19 +8,55 @@
 
 
 
-let anci={droidscript_resolves:{},alert2_resolves:{},showlist_resolves:{}};
+var anci = {} ;
 
-let ge=(elementID)=>document.getElementById(elementID);
-let hh="\r\n";
-let jss=JSON.stringify;
-let jsp=JSON.parse;
-let csl = s=>console.log(s);
+if(globalThis.anci)
+  anci = globalThis.anci;
 
-let alert2;
+
+Object.assign(anci , 
+              { droidscript_resolves:{},
+                alert2_resolves:{},
+                showlist_resolves:{}  } ) ;
+
+
+anci._absorb=(func,falias)=>{
+  if( func && (func.Name || func.name) )
+  {
+    let key = func.Name || func.name ;
+    if( anci[key] )
+    {
+      anci[key+"Browser"] = anci[key] ;
+      anci[key]=func; 
+    }
+    else   
+      anci[key]=func; 
+  }
+  if(falias)
+    anci[falias]=func;
+}
+
+
+function ge(elementID){return document.getElementById(elementID);}
+
+const tic = "`" ;
+const hh = "\r\n";
+const jss = JSON.stringify;
+const jsp = JSON.parse;
+const csl = s=>console.log(s);
+
 
 let nodeapi;
 
-{  //  Default Parameters
+let InBrowser = (globalThis.window == globalThis) ;
+let InNodeRuntime = (! InBrowser && typeof(process)!=="undefined") ;
+
+csl("InBrowser:"+InBrowser);
+csl("InNodeRuntime:"+InNodeRuntime);
+
+
+// #region  {  Default Parameters
+
     anci.AppVersion = 0.87;              
     // The app version for Node.js web/electron APP
     anci.ProVersion = false;
@@ -32,20 +68,30 @@ let nodeapi;
         ReversePortrait,ReverseLandscape, 
         or use number 0~4
     */
-}
 
-{  //  Node API
+// #endregion  }  Default Parameters
 
-{  //  Network
 
-anci.RunRemoteApp=async (url="",param={})=>
+
+
+
+// #region  {  Common API
+
+
+  // #region  {  Network
+
+
+async function RunRemoteApp(url="",param={})
 {
   url+='';
+  
+  let rmurl = anci.isremote() ;
   
   if(!url.match(/[\\\/]/g))
   {
     let appname = url ;
 
+    let rpn = "/sdcard/napps/"+appname;
     let rp1 = '/bin/'+appname+'/{app_entry}.html' ;
     let rp2 = '/media/sdcard/napps/' + appname + '/{app_entry}.html' ;
     
@@ -53,43 +99,95 @@ anci.RunRemoteApp=async (url="",param={})=>
       url = await anci.RealPath( rp1 ) ;
     else if( await anci.hasf( rp2 ) )
       url = await anci.RealPath( rp2 ) ;
-    else
+    else if(anci.platform=="android")
       return "No app "+url+" found in /bin and /media/sdcard/napps" ;
+    else if( await anci.hasd( rpn ) )
+      url = rpn + "/main.app" ;
+    else if( await anci.hasurl( "../"+appname+'/{app_entry}.html' ) )
+    {
+      url =  "../"+appname+'/{app_entry}.html' ;
+      rmurl = "" ;
+    }
+    else
+    {
+      return "Failed to find app: " + appname ;
+    }
+    
+    if( rmurl )
+      url = new URL( rmurl ).origin + url ;
 
-    if( ! (await anci.hasurl(url) ) )
-      url = "../"+appname+"/{app_entry}.html";
-
-    if( ! (await anci.hasurl(url) ) )
-      return "No app "+url+" found!" ;
   }
 
   
-
-  let sturl=( anci.query.storage_location_url || (  ge("storage_location_url") && ge("storage_location_url").value  ) ||
-  	    "local"  
-	  ).trim();
-
-  if(sturl=="local") 
-    sturl=location.protocol+"//"+location.host+"/storage_local";
+  let obj = { platform:anci.platform  ,  ...param };
   
-  let query = anci.genurlp( { passwd, platform, storage_location_url:sturl, ...param } );
   
-  if(    !confirm("Will now open other APP(inherits permissions) 將開啟其他APP(將繼承權限):\r\n"+url+'?passwd=...&'+
-      anci.genurlp(param)  )    )
+  
+  if( rmurl = anci.isremote() )
+  {
+    let u = new URL( rmurl );
+    rmurl = u.href.replace( u.search, "") ;
+    obj.storage_location_url = rmurl ;
+  }
+  else
+    obj.storage_location_url = location.origin + "/storage_local"
+
+  if(anci.passwd)
+    obj.passwd = anci.passwd;
+
+  let query = anci.genurlp( obj );
+  
+  if(    !confirm("Will now open other APP(inherits permissions) 將開啟其他APP(將繼承權限):\r\n"+url+'?'+query )    )
     return false;
 
   
 
-  if(platform == "android")
+  if(anci.platform == "android")
     location.href = (url + "?" + query );
   else
     anci.openu( url + "?" + query )
   return true;
 }
 
-anci.remoteapp=anci.RunRemoteApp;
+var remoteapp=RunRemoteApp;
+anci._absorb(remoteapp,"remoteapp");
 
-anci.DownloadFile=(url,file_path,headers,method)=>
+
+function isRemoteApp()
+{
+  if( anci.platform == "web" )
+    return anci.nodeapi( { test:1 }, true, true ) ;
+
+
+  if(  ( anci.platform == "android" && 
+          (location.pathname.startsWith("/android_asset/") ||
+          location.pathname.startsWith("/storage/emulated/") )
+        ) )
+    return false;
+  else
+    return true;
+  
+}
+
+anci._absorb( isRemoteApp , "isremote" );
+
+
+function normalizePort(url) {
+  if (url.port) return url.port;
+  return url.protocol === "https:" ? "443" : url.protocol === "http:" ? "80" : "";
+}
+
+
+function isSameOriginStrict(url1, url2) {
+  const a = new URL(url1);
+  const b = new URL(url2);
+  return a.protocol === b.protocol &&
+         a.hostname === b.hostname &&
+         normalizePort(a) === normalizePort(b);
+}
+
+
+function DownloadFile(url,file_path,headers,method)
 {
   if(typeof headers=="string")
   {
@@ -106,15 +204,20 @@ anci.DownloadFile=(url,file_path,headers,method)=>
   return nodeapi( sobj ) ;
 }
 
+var dlf=DownloadFile;
+anci._absorb(dlf,"dlf");
 
 
-anci.dlf=anci.DownloadFile;
+function DownloadFilePost(url,file_path,headers)
+{
+  return anci.dlf(url,file_path,headers,"POST");
+}
 
-anci.DownloadFilePost=(url,file_path,headers)=>anci.dlf(url,file_path,headers,"POST");
+var dlfp=DownloadFilePost;
+anci._absorb(dlfp,"dlfp");
 
-anci.dlfp=anci.DownloadFilePost;
 
-anci.HttpRequest=(method_optional,url,encoding,data,headers)=>
+function HttpRequest(method_optional,url,encoding,data,headers)
 {
   if(typeof headers=="string")
     try{
@@ -140,12 +243,16 @@ anci.HttpRequest=(method_optional,url,encoding,data,headers)=>
 
   return nodeapi( sobj ) ;
 
-};
+}
 
-anci.xhr=anci.HttpRequest;
+var xhr=HttpRequest;
+anci._absorb(xhr,"xhr");
 
-anci.HttpRequestInBytes = (url)=>{
+
+function HttpRequestInBytes(url)
+{
   url = ( url || "" ) + "";
+  
 return new Promise(resolve=>{
 
 const xhr = new XMLHttpRequest();
@@ -178,12 +285,17 @@ xhr.onerror = function () {
 xhr.send();
 
 });
-};
 
-anci.xhrb=anci.HttpRequestInBytes;
+}
 
-anci.HttpRequestXhr=(url)=>{
+var xhrb=HttpRequestInBytes;
+anci._absorb(xhrb,"xhrb");
+
+
+function HttpRequestXhr(url)
+{
   url = ( url || "" ) + "";
+
 return new Promise(resolve=>{
 $.ajax({
   url,
@@ -195,28 +307,36 @@ $.ajax({
   error:e=>resolve("Failed to request")
 });
 });
-};
 
-anci.xhrt=anci.HttpRequestXhr ;
+}
 
-anci.CheckUrlExistence=(url)=>{
+var xhrt=HttpRequestXhr;
+anci._absorb(xhrt,"xhrt");
+
+
+function CheckUrlExistence(url)
+{
+
   return new Promise(resolve=>{
 
   $.ajax( { url:url+"" , type:"HEAD", dataType:"text",
     success:()=>resolve(true), error:()=>resolve(false)});
 
   });
+
 }
 
-anci.hasurl=anci.CheckUrlExistence;
+var hasurl = CheckUrlExistence ;
+anci._absorb( hasurl , "hasurl" ) ;
 
 
-}  //  Network End
+  // #endregion  }  Network
 
 
-{ //  File system operations
+  // #region  {  File system operations
 
-anci.OpenFile=async function(filepath,absext, openInIframe)
+
+async function OpenFile(filepath,absext, openashtml)
 {	
   if(!filepath) 
     return false;
@@ -225,6 +345,19 @@ anci.OpenFile=async function(filepath,absext, openInIframe)
 
   if(!(await anci.FileExists(filepath))) 
     return false;
+    
+  let rp = await anci.realp( filepath ) ;
+  
+  let rmurl = anci.isremote() ;
+    if( ! rmurl )
+      rp = location.origin + rp ;
+    else
+      rp = new URL( rmurl ).origin + rp ;
+  
+  if( await anci.hasurl( rp ) && ! openashtml )
+  {
+    return await anci.showu( rp );
+  }
 
   var absexists, fext;
 
@@ -266,60 +399,36 @@ if(htmlf.indexOf(fext)+txtf.indexOf(fext)+imgf.indexOf(fext)+audf.indexOf(fext)+
 
 var nfext = fext;
 
-let writeToNewWindow = async (content) => {
-  if(!openInIframe)
-  {
-    var cwin=anci.openu("about:blank");
-	  cwin.document.write(content);
-
-    return cwin;
-  }
-  else
-  {
-    let ff=$(`<iframe style="width:100%;height:70vh;
-          background-color:white;">
-          </iframe>`);
-
-    ff.attr("srcdoc",content);
-
-    alert2(`<div class="class-for-appending-iframe"></div>`,true,false)
-
-    $(".class-for-appending-iframe").append(ff);
-
-    await anci.sleep(1000);
-
-    return ff[0].contentWindow;
-  }
-  
-}
 
 if(htmlf.indexOf(nfext)!=-1)
 {
 	var t=await anci.rf(filepath);
 
-  writeToNewWindow(t);
+  return await anci.showc(t) ;
 }
 else if(txtf.indexOf(nfext)!=-1)
 {
 
-  if( await anci.hasd("/bin/notepad") && !openInIframe)
+  if( await anci.hasd("/bin/notepad") && ! openashtml )
   {
     return await anci.remoteapp("notepad", {filep:filepath} );
   }
-
-    var t = await anci.ReadFile(filepath);
-    let cwin = await writeToNewWindow("<text"+"area id=\"tall\" style=\"width:100%;height:70vh;\"></text"+"area><br><but"+"ton onclick=\"var cwin=window.opener.open(\'about:blank\');cwin.document.write(tall.value);\">Html preview</but"+"ton>");
-    cwin.document.getElementById("tall").value=t;
-
-    return true;
+  
+    var text = await anci.rf( filepath );
+    
+    var blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    var blobUrl = URL.createObjectURL(blob);
+    
+    //alert2(blobUrl);
+    
+    return await anci.showu( blobUrl ) ;
 }
 else if(imgf.indexOf(nfext)!=-1)
 {
     var b64=await anci.ReadFile(filepath,"base64");
     var datauri="data:image/"+nfext.substr(1)+";base64,"+b64;
-    writeToNewWindow(`<img src="${datauri}">`);
-
-    return true;
+    
+    return await anci.showc(`<img src="${datauri}">`);
 }
 else if(audf.indexOf(nfext)!=-1)
 {
@@ -327,23 +436,23 @@ else if(audf.indexOf(nfext)!=-1)
     var b64=await anci.ReadFile(filepath,"base64");
 
     var datauri="data:audio/"+nfext.substr(1)+";base64,"+b64;
-    writeToNewWindow(`<audio controls="controls" 
+    
+    return await anci.showc(`<audio controls="controls" 
                         autobuffer="autobuffer">
                         <source src="${datauri}" />
                       </audio>`);
     
-    return true;
 }
 else if((vidf).indexOf(nfext)!=-1)
 {
   var b64 = await anci.ReadFile(filepath,"base64");
+  
   var datauri="data:video/"+nfext.substr(1)+";base64,"+b64;
 
-  writeToNewWindow(`<video controls>
+  return await anci.showc(`<video controls>
                       <source src="${datauri}">
                     </video>`);
 
-  return true;
 }
 else //(nfext===".download" or more)
 {
@@ -354,17 +463,19 @@ else //(nfext===".download" or more)
 
 
 
-};
+}  //  open file ends
 
-anci.openf=anci.OpenFile;
+var openf = OpenFile ;
+anci._absorb( openf , "openf" ) ;
 
-anci.OpenFileBrowser=anci.OpenFile;
+//anci.OpenFileBrowser = anci.OpenFile;  //  already done by _absorb
 
-anci.BrowserUploadFile = async (overwrite, download_path="/sdcard/Download")=>
+
+async function BrowserUploadFile(overwrite, upload_path="/sdcard/Download")
 {
-    if( download_path.slice(-1) != "/" )
-        download_path += "/" ;
-    const dlp = download_path ;
+    if( upload_path.slice(-1) != "/" )
+        upload_path += "/" ;
+    const dlp = upload_path ;
 
     if(!window.browser_file_select_dialog)
         $("body").append(anci._bfsd);
@@ -398,12 +509,12 @@ anci.BrowserUploadFile = async (overwrite, download_path="/sdcard/Download")=>
     {
       if( overwrite == false )
       {
-        if( ! await anci.hasd( download_path ) )
+        if( ! await anci.hasd( upload_path ) )
         {
-          await anci.mkdir( download_path );
+          await anci.mkdir( upload_path );
 
-          if( ! await anci.hasd( download_path ) )
-            return "Failed: No such folder" + hh + download_path ;
+          if( ! await anci.hasd( upload_path ) )
+            return "Failed: No such folder" + hh + upload_path ;
         }
 
         while(  await anci.hasf( dlp + b64s.fname )  )
@@ -423,20 +534,24 @@ anci.BrowserUploadFile = async (overwrite, download_path="/sdcard/Download")=>
     }  //  overwrite is boolean
 }  //  bulf ends
 
-anci.bulf=anci.BrowserUploadFile;
+var bulf = BrowserUploadFile ;
+anci._absorb( bulf , "bulf" ) ;
 
-anci.ReadFileInBytes=function(filePath)
+
+function ReadFileInBytes(filePath)
 {
   var sobj={"cmd":"app.ReadFileInBytes",
                 "path": (filePath || "")+"",
            };
 
   return nodeapi( sobj ) ;
-};
-	
-anci.rfb=anci.ReadFileInBytes;
+}
 
-anci.WriteFileInBytes=function(filePath,byteArray)
+var rfb = ReadFileInBytes ;
+anci._absorb( rfb , "rfb" ) ;
+
+
+function WriteFileInBytes(filePath,byteArray)
 {
   if(!byteArray) return "Write file error: No contents specified";
 
@@ -445,11 +560,13 @@ anci.WriteFileInBytes=function(filePath,byteArray)
                 byteArray };
 
   return nodeapi( sobj ) ;
-};
+}
 
-anci.wfb=anci.WriteFileInBytes;
+var wfb = WriteFileInBytes ;
+anci._absorb( wfb , "wfb" ) ;
 
-anci.ReadFile=function(filePath,textEncoding)
+
+function ReadFile(filePath,textEncoding)
 {
 	textEncoding=textEncoding || "utf8";
 
@@ -458,11 +575,13 @@ anci.ReadFile=function(filePath,textEncoding)
                 "encoding":textEncoding };
 
     return nodeapi( sobj ) ;
-};
+}  //  read file ends
 
-anci.rf=anci.ReadFile;
+var rf = ReadFile ;
+anci._absorb( rf , "rf" ) ;
 
-anci.WriteFile=function(filePath,textToWrite,textEncoding)
+
+function WriteFile(filePath,textToWrite,textEncoding)
 {
   if(textToWrite==null) return "Write file error: No contents specified";
   textEncoding=textEncoding || "utf8";
@@ -472,77 +591,97 @@ anci.WriteFile=function(filePath,textToWrite,textEncoding)
                 "text":textToWrite+"",
                 "encoding":textEncoding };
   return nodeapi( sobj ) ;
-};
+}  //  write file ends
 
-anci.wf=anci.WriteFile;
+var wf = WriteFile ;
+anci._absorb( wf , "wf" ) ;
 
-anci.MakeFolder=function(folderPath)
+
+function MakeFolder(folderPath)
 {
   var sobj={"cmd":"app.MakeFolder",
                 "path":folderPath+'' };
   return nodeapi( sobj ) ;
-};
+}
 
-anci.mkdir=anci.MakeFolder;
+var mkdir = MakeFolder ;
+anci._absorb( mkdir , "mkdir" ) ;
 
-anci.DeleteFile=function(filePath)
+
+function DeleteFile(filePath)
 {
   var sobj={"cmd":"app.DeleteFile",
                 "path":filePath+'' };
   return nodeapi( sobj ) ;
-};
+}
 
-anci.rm=anci.DeleteFile;
+var rm = DeleteFile ;
+anci._absorb( rm , "rm" ) ;
 
-anci.DeleteFolder=function(folderPath)
+
+function DeleteFolder(folderPath)
 {
   var sobj={"cmd":"app.DeleteFolder",
                 "path":folderPath+'' };
   return nodeapi( sobj ) ;
-};
+}
 
-anci.rmdir=anci.DeleteFolder;
+var rmdir = DeleteFolder ;
+anci._absorb( rmdir , "rmdir" ) ;
 
-anci.RealPath=function(filepath)
+
+function RealPath(filepath)
 {
   var sobj={"cmd":"RealPath",
                 "param":[filepath+''] };
   return nodeapi( sobj ) ;
-};
+}
 
-anci.realp=anci.RealPath;
+var realp = RealPath ;
+anci._absorb( realp , "realp" ) ;
 
-anci.RenameFile=function(oldPath,newPath,overwrite,isFolder)
+
+function RenameFile(oldPath,newPath,overwrite,isFolder)
 {
   var sobj={"cmd": (isFolder?"app.RenameFolder":"app.RenameFile"),
                 "path":oldPath,
                 "npath":newPath,
                 overwrite };
   return nodeapi( sobj ) ;
-};
+}
 
-anci.mv=anci.RenameFile;
+var mv = RenameFile ;
+anci._absorb( mv , "mv" ) ;
 
-anci.RenameFolder=(oldPath,newPath,overwrite)=>anci.RenameFile(oldPath,newPath,overwrite,true);
 
-anci.mvd=anci.RenameFolder;
+function RenameFolder(oldPath,newPath,overwrite)
+{ return anci.RenameFile(oldPath,newPath,overwrite,true); }
 
-anci.CopyFile=function(sourcePath,destinationPath,overwrite,isFolder)
+var mvd = RenameFolder ;
+anci._absorb( mvd , "mvd" ) ;
+
+
+function CopyFile(sourcePath,destinationPath,overwrite,isFolder)
 {
   var sobj={"cmd": (isFolder?"app.CopyFolder":"app.CopyFile"),
                 "path":sourcePath,
                 "npath":destinationPath,
                 "overwrite":overwrite };
   return nodeapi( sobj ) ;
-};
+}
 
-anci.cp=anci.CopyFile;
+var cp = CopyFile ;
+anci._absorb( cp , "cp" ) ;
 
-anci.CopyFolder=(sourcePath,destinationPath,overwrite)=>anci.CopyFile(sourcePath,destinationPath,overwrite,true);
 
-anci.cpd=anci.CopyFolder;
+function CopyFolder(sourcePath,destinationPath,overwrite)
+{ return anci.CopyFile(sourcePath,destinationPath,overwrite,true); }
 
-anci.FileExists=async (filePath,isFolder)=>
+var cpd = CopyFolder ;
+anci._absorb( cpd , "cpd" ) ;
+
+
+async function FileExists(filePath,isFolder)
 {
   var sobj={"cmd":(isFolder?"app.FolderExists":"app.FileExists"),
                 "path":filePath+''  };
@@ -554,15 +693,20 @@ anci.FileExists=async (filePath,isFolder)=>
 
   return false;
 
-};
+}
 
-anci.hasf=anci.FileExists;
+var hasf = FileExists ;
+anci._absorb( hasf , "hasf" ) ;
 
-anci.FolderExists=(folderPath)=>anci.FileExists(folderPath,true);
 
-anci.hasd=anci.FolderExists;
+function FolderExists(folderPath)
+{ return anci.FileExists(folderPath,true); }
 
-anci.ListFolder=async (folderPath,recursive)=>
+var hasd = FolderExists ;
+anci._absorb( hasd , "hasd" ) ;
+
+
+async function ListFolder(folderPath,recursive)
 {
   var sobj={"cmd":"app.ListFolder", recursive,
                 "path":folderPath+'' };
@@ -579,13 +723,18 @@ catch(e){alert(e.stack)}
   return [];
 }
 
-anci.ls=anci.ListFolder;
-
-anci.ListFolderRecursive=(folderPath)=>anci.ls(folderPath,true);
-anci.lsr=anci.ListFolderRecursive;
+var ls = ListFolder ;
+anci._absorb( ls , "ls" ) ;
 
 
-anci.GetFileState=async function(filePath)
+function ListFolderRecursive(folderPath)
+{ return anci.ls(folderPath,true); }
+
+var lsr = ListFolderRecursive ;
+anci._absorb( lsr , "lsr" ) ;
+
+
+async function GetFileState(filePath)
 {
   var sobj={"cmd":"app.GetFileState",
                 "path":filePath+'' };
@@ -598,17 +747,19 @@ anci.GetFileState=async function(filePath)
   
   return stat;
   
-};
+}
 
-anci.stat=anci.GetFileState;
+var stat = GetFileState ;
+anci._absorb( stat , "stat" ) ;
 
-anci.ChooseFile=async (default_folders,multi_select)=>
+
+async function ChooseFile(default_folders,multi_select)
 {
 
 var deflist=["/sdcard", "/home", "/bin", "/media"];
 deflist.unshift("<<手動輸入... Manually enter...>>");
 
-if(platform=="android") 
+if(anci.platform=="android") 
 {  
   deflist.unshift("Use System Dialog");
   deflist.push("/android_asset");
@@ -626,7 +777,7 @@ else if(default_folders && default_folders.constructor==Array)
 
 var selected_file = await anci.showlist("選擇檔案 Select a file",deflist);
 
-if(platform=="android" && selected_file=="Use System Dialog")  
+if(anci.platform=="android" && selected_file=="Use System Dialog")  
 {
     var sobj={"cmd":"app.ChooseFile",
                 "folder":"" };
@@ -737,45 +888,56 @@ return await file_selected(selected_file);
 
 }  //  end of anci.ChooseFile
 
-anci.selectf=anci.ChooseFile;
+var selectf = ChooseFile ;
+anci._absorb( selectf , "selectf" ) ;
 
-anci.GetFileDate=async (filePath)=>
-  {  
+
+async function GetFileDate(filePath)
+{  
     let mtimeMs=(await anci.GetFileState(filePath+'')).mtimeMs-0;
     //alert(mtimeMs);
     return new Date(mtimeMs.toFixed()-0);  
-  };
+}
 
-anci.filemtime=anci.GetFileDate;
+var filemtime = GetFileDate ;
+anci._absorb( filemtime , "filemtime" ) ;
 
-anci.GetFileSize=async (filePath="")=>
-  {  
-    filePath+="";
+
+async function GetFileSize(filePath="")
+{  
+  filePath+="";
     
-    if( filePath.startsWith('content:') )
-    {
-      return await anci.urlsize( filePath );
-    }
+  if( filePath.startsWith('content:') )
+  {
+    return await anci.urlsize( filePath );
+  }
     
-    let fsize=(await anci.GetFileState(filePath)).size-0;
-    return fsize;  
-  };
+  let fsize=(await anci.GetFileState(filePath)).size-0;
+  return fsize;  
+}
 
-anci.filesize=anci.GetFileSize;
+var filesize = GetFileSize ;
+anci._absorb( filesize , "filesize" ) ;
 
 
-}  //  File system operations End
+  // #endregion  }  File system operations End
 
-anci.EvalServer=function(command_to_evaluate)
+
+  // #region  {  System
+
+
+function EvalServer(command_to_evaluate)
 {
   var sobj={"cmd":"EvalServer",
                 "param":[command_to_evaluate+""] };
   return nodeapi( sobj ) ;
-};
+}
   
-anci.evalserver=anci.EvalServer;
+var evalserver = EvalServer ;
+anci._absorb( evalserver , "evalserver" ) ;
 
-anci.SetClipboardText=async function(txt)
+
+async function SetClipboardText(txt)
 {
   txt+='';
 
@@ -798,35 +960,125 @@ anci.SetClipboardText=async function(txt)
   obj.remove();
 
   return "Successfully set to clipboard: " + txt;
+}
 
-};
-
-anci.setcb=anci.SetClipboardText;
-
-anci.GetDisplayWidth=function()
- {
- return window.innerWidth;
- };
-
-anci.GetDisplayHeight=function()
- {
- return window.innerHeight;
- };
+var setcb = SetClipboardText ;
+anci._absorb( setcb , "setcb" ) ;
 
 
-}  //  Node API End
+function GetDisplayWidth()
+{
+  return window.innerWidth;
+}
+
+var getdisplayw = GetDisplayWidth ;
+anci._absorb( getdisplayw , "getdisplayw" ) ;
+
+
+function GetDisplayHeight()
+{
+  return window.innerHeight;
+}
+
+var getdisplayh = GetDisplayHeight ;
+anci._absorb( getdisplayh , "getdisplayh" ) ;
+
+
+// #endregion  }  System
+
+
+// #endregion  }  Common API
 
 
 
 
 
+// #region  {  Common libraries
+
+
+  // #region  {  Utilities
 
 
 
+async function SaveValue(...i)
+{
+  if(i.length==1)
+    [ key_name, value, database_file ] =
+  [ null, i[0], 'default_db' ];
+  else if(i.length==2)
+    [ key_name, value, database_file ] =
+  [ i[0], i[1], 'default_db' ];
+  else if(i.length==3)
+    [ key_name, value, database_file ] = i ;
+  
+  key_name+=""; 
+  let appd="/home/"+(await anci.appn);
+  if( ! await anci.hasd(appd) ) 
+    await anci.mkdir(appd);
+  database_file = appd +
+  "/" + database_file + ".txt";
+  if( await anci.hasf(database_file) )
+    {
+    try{
+      var obj=JSON
+      .parse( await anci.rf(database_file) );
+    }catch(e){ var obj={}; }
+  }
+  else
+  var obj={};
+  
+  obj[ key_name ] = value;
+  try{
+    var ret=await anci.wf( database_file, 
+      JSON.stringify(obj) );
+    }catch(e){  var ret=e.stack;  }
+    return ret;
+}
+SaveValue.Desc=`f(value) or f(key,value) or f(key,value,database_file)`;
 
-{  //  Common libraries
+var savev = SaveValue ;
+anci._absorb( savev , "savev" ) ;
 
-anci.ParseUrlParam = (url)=>
+
+async function LoadValue(optional_key_name,
+                         optional_defvalue,
+                         optional_database_file)
+{
+      if(optional_key_name==null)
+        optional_key_name='null';
+      if(optional_defvalue==null)
+        optional_defvalue="";
+      if(!optional_database_file)
+        optional_database_file='default_db';
+
+      optional_key_name+=""; 
+      let appd="/home/"+(await anci.appn);
+      if( ! await anci.hasd(appd) ) 
+        await anci.mkdir(appd);
+
+      let database_file = appd +
+          "/" + optional_database_file + ".txt";
+      if( await anci.hasf(database_file) )
+      {
+        try{
+        var obj=JSON
+              .parse( await anci.rf(database_file) );
+        }catch(e){ var obj={}; }
+      }
+      else
+        var obj={};
+      
+      let ret=obj[ optional_key_name ];
+      if(ret==null) ret=optional_defvalue;
+
+      return ret;
+}
+
+var loadv = LoadValue ;
+anci._absorb( loadv , "loadv" ) ;
+
+
+function ParseUrlParam(url)
 {
   url+='';
   let i=url.lastIndexOf('?');
@@ -838,19 +1090,22 @@ anci.ParseUrlParam = (url)=>
   return Object.fromEntries(qarr);
 }
 
-anci.parseurlp = anci.ParseUrlParam;
+var parseurlp = ParseUrlParam ;
+anci._absorb( parseurlp , "parseurlp" ) ;
   
 
-anci.GenerateUrlParam = (param={})=>
+function GenerateUrlParam(param={})
 {
   return Object.keys(param).map(i=>{
     return encodeURIComponent(i)+'='+encodeURIComponent(param[i]);
   }).join('&');
 }
 
-anci.genurlp=anci.GenerateUrlParam;
+var genurlp = GenerateUrlParam ;
+anci._absorb( genurlp , "genurlp" ) ;
 
-anci.GetDocumentation=(outputHTML,filterString)=>
+
+function GetDocumentation(outputHTML,filterString, testButton=true)
 {
   let arr=
   Object.keys(anci)
@@ -862,11 +1117,21 @@ anci.GetDocumentation=(outputHTML,filterString)=>
       let tarr=[ii+":"+anci[ii].Name+par];
       if(anci[ii].Desc) 
         tarr.push(anci[ii].Desc);
+        
+      let bth="";
+      if( testButton && anci[ii].Test )
+        bth = `<button
+               onclick="anci.eval(decodeURIComponent(`+tic+
+                           encodeURIComponent(anci[ii].Test)+tic+
+                              `)).then(alert2)">
+                   Test</button>
+                   <div>Test code: ${anci.ttoh(anci[ii].Test)}</div>` ;
 
       let ohtml=`
   <details onclick="event.stopPropagation();">
     <summary>${tarr[0]}</summary>
-    ${tarr[1]||""}
+    <b>${tarr[1]||""}</b>
+    <div style="text-align:center">${bth}</div>
   </details>
   `
 
@@ -881,11 +1146,13 @@ anci.GetDocumentation=(outputHTML,filterString)=>
   return arr;
 }
 
-anci.getdoc=anci.GetDocumentation;
+var getdoc = GetDocumentation ;
+anci._absorb( getdoc , "getdoc" ) ;
 
 Object.defineProperty(anci,"doc",{get:anci.getdoc});
 
-anci.GetDocumentationAbbreviation=(limitLength=25)=>
+
+function GetDocumentationAbbreviation(limitLength=25)
 {
   let arr=
   Object.keys(anci)
@@ -903,14 +1170,19 @@ anci.GetDocumentationAbbreviation=(limitLength=25)=>
   return arr;
 }
 
-anci.getdoca=anci.GetDocumentationAbbreviation;
+var getdoca = GetDocumentationAbbreviation ;
+anci._absorb( getdoca , "getdoca" ) ;
 
 Object.defineProperty(anci,"doca",{get:anci.getdoca});
 
-anci.help=(filterString="")=>{
-  if(globalThis.window == globalThis)
+
+function Help(filterString="", testButton=true)
+{
+  filterString=filterString || "";
+
+  if( InBrowser )
   {
-    anci.showlist( anci.getdoc(true,filterString+"") , true );
+    anci.showlist( anci.getdoc(true,filterString+"",testButton) , true );
   }
   else 
   {
@@ -922,10 +1194,19 @@ anci.help=(filterString="")=>{
   }
 }
 
-anci.help.Name="Help";
+var help = Help ;
+anci._absorb( help , "help" ) ;
 
-anci.OpenErudaConsole=()=>
+
+function OpenErudaConsole(copyOneLineForPastingToAddressBar)
 {
+  if(copyOneLineForPastingToAddressBar)
+  {
+    anci.setcb(`avascript:(()=>  {    var script = document.createElement('script');	script.src='https://cdn.jsdelivr.net/npm/eruda';	document.body.appendChild(script);	script.onload = function () { eruda.init(); }  })();`);
+    alert2("Paste to address bar and add j in the beginning, then choose the one with a blank globe icon rather than google icon!")
+    return true;
+  }
+
   return new Promise(resolve=>
   {
     var script = document.createElement('script');
@@ -933,43 +1214,48 @@ anci.OpenErudaConsole=()=>
 	document.body.appendChild(script);
 	script.onload = function () { eruda.init();resolve(); }
   });
+
 }
 
-anci.eruda=anci.OpenErudaConsole;
+anci._absorb( OpenErudaConsole , "eruda" ) ;
 
-anci.ListObjectProperties=function(obj)
+
+function ListObjectProperties(obj)
 {
-          let objO=obj;
-          let listK={};
-          while(obj!=null)
-            {
-                Object.getOwnPropertyNames(obj).forEach(i=>{
-                    listK[i]=1;
-                });
-                obj=obj.__proto__;
-            }
-          let ret=Object.keys(listK);
-          let oname=objO.constructor && objO.constructor.name;
-          if(oname=="Number" || oname=="Boolean")
-            ret.unshift(objO);
-          else if(oname=="String")
-          {
-            ret = ret.filter( i=> isNaN(i) );
-            ret.unshift(objO.substr(0,1000));
-          }
-          else if(oname=="Array")
-            ret.unshift(objO.slice(0,10).join(","));
-		  else if(oname=="Function" || oname=="AsyncFunction")
-			ret.unshift(objO.toString().slice(0,1000))
-
-          ret.unshift(oname || "No Constructor");
-          return ret;
+  let objO=obj;
+  let listK={};
+  while(obj!=null)
+  {
+    Object.getOwnPropertyNames(obj).forEach(i=>
+    {
+      listK[i]=1;
+    });
+    obj=obj.__proto__;
+  }
+  let ret=Object.keys(listK);
+  let oname=objO.constructor && objO.constructor.name;
+  if(oname=="Number" || oname=="Boolean")
+    ret.unshift(objO);
+  else if(oname=="String")
+  {
+    ret = ret.filter( i=> isNaN(i) );
+    ret.unshift(objO.substr(0,1000));
+  }
+  else if(oname=="Array")
+    ret.unshift(objO.slice(0,10).join(","));
+  else if(oname=="Function" || oname=="AsyncFunction")
+    ret.unshift(objO.toString().slice(0,1000))
+  
+  ret.unshift(oname || "No Constructor");
+  return ret;
 }
 
-anci.objls=anci.ListObjectProperties;
+var objls = ListObjectProperties ;
+anci._absorb( objls , "objls" ) ;
 
-anci.ObjectBrowser=async function(rootObj)
-  {
+
+async function ObjectBrowser(rootObj)
+{
     const eu=encodeURIComponent;
     const du=decodeURIComponent;
   
@@ -985,9 +1271,12 @@ anci.ObjectBrowser=async function(rootObj)
 
     let children=anci.objls(rootObj);
 
-    children=children.map(i=>(`<span data-path="rootObj[decodeURIComponent(`+"`"+eu(i)+"`"+`)]">${anci.ttoh(i)}</span>`));
+    children = children.map(i=>(`<span data-path="rootObj[decodeURIComponent(`+"`"+eu(i)+"`"+`)]">${anci.ttoh(i)}</span>`));
 
     var reso=await anci.showlist("rootObj",children,true);
+    
+    if(!reso) return "";
+    
     var res=$(reso.toString()).data("path");
 
     //console.log(res);
@@ -1019,11 +1308,13 @@ anci.ObjectBrowser=async function(rootObj)
     }
     else
       return anci.objbs(rootObj);
-}
+}  //  objbs
 
-anci.objbs=anci.ObjectBrowser;
+var objbs = ObjectBrowser ;
+anci._absorb( objbs , "objbs" ) ;
 
-anci.EnableObjectChaining=()=>
+
+function EnableObjectChaining()
 {
 
 anci.branched_obj=[]
@@ -1078,64 +1369,120 @@ Object.defineProperty(Object.prototype,"m",{
 })
 
 
+}  //  obj chaining on 
+
+var objchainon = EnableObjectChaining ;
+anci._absorb( objchainon , "objchainon" ) ;
+
+
+function DisableObjectChaining()
+{
+  delete Object.prototype.c;
+  delete Object.prototype.b;
+  delete Object.prototype.m;
+
+  anci.branched_obj=[]
 }
 
-anci.objchainon=anci.EnableObjectChaining;
+var objchainoff = DisableObjectChaining ;
+anci._absorb( objchainoff , "objchainoff" ) ;
 
-anci.DisableObjectChaining=()=>
+
+async function EvaluateCommand(command_text)
 {
-delete Object.prototype.c;
-delete Object.prototype.b;
-delete Object.prototype.m;
-
-anci.branched_obj=[]
-}
-
-anci.objchainoff=anci.DisableObjectChaining;
-
-anci.EvaluateCommand=(command_text)=>
-{
-  let t=command_text+'';
+  let t = ( command_text || "" ) + '' ;
+  
+  let temp_chain_is_on = ( !! Object.prototype.c ) ;
+  
+	if( ! temp_chain_is_on )
+	    anci.objchainon();
 
   t=`(async ()=>{
 
 	  try{
 
-	    let temp_chain_status=(!!Object.prototype.c);
-	    !temp_chain_status && anci.objchainon();
-	    //var csl=console.log,jss=JSON.stringify,jsp=JSON.parse;
-
 	    ${t}
 
-	    !temp_chain_status && anci.objchainoff();
-
-
 	  }catch(e){
-		console.log(e);
-	    alert2("Error from client:\\r\\n"+e+"\\r\\n"+e.stack,null,true);
+		  console.log(e);
+	    alert2( "Error from client:" +hh +e +hh +e.stack );
+	    return e.stack ;
 	  }
 
       })()`;
+      
+  
 
-  eval(t);
-
-
+  let ret = await eval(t);
+  
+  if( ! temp_chain_is_on )
+      anci.objchainoff();
+  
+  return ret ;
 }
 
-anci.eval=anci.EvaluateCommand;
+anci.eval=EvaluateCommand;
+anci._absorb( EvaluateCommand ) ;
 
-{  //  GUI
+// #endregion  }  Utilities
 
-anci.FontAwesomeIcon=(iconstr)=>
+
+  // #region  {  GUI
+
+function GetCssClasses(filterString)
 {
+  var classNames = new Set();
+
+for (const sheet of document.styleSheets) {
+  try {
+    for (const rule of sheet.cssRules) {
+      if (rule.selectorText) {
+        const matches = rule.selectorText.match(/\.[\w-]+/g);
+        if (matches) {
+          matches.forEach(cls => classNames.add(cls.slice(1)));
+        }
+      }
+    }
+  } catch (e) {
+    // 有些 stylesheet 可能是跨域的，會拋錯
+  }
+}
+
+let arr=([...classNames]);
+
+if(filterString)
+  arr=arr.filter(i=>i.toLowerCase().includes(filterString.toLowerCase()));
+  
+return arr;
+}  //  getcssc
+
+anci._absorb( GetCssClasses , "getcssc" );
+
+function FontAwesomeIcon(iconstr)
+{
+  if( (iconstr+"") != "show" )
+  {
   iconstr=(iconstr || "r,folder-open")+'';
   let [t,n]=iconstr.split(",");
   return `<i class="fa${t} fa-${n}"></i>`;
+  }
+  else
+  {
+    let arr=anci.getcssc("fa-");
+    arr=arr.map(i=>(  i.slice(3)+anci.faicon('r,'+i.slice(3))+" | "+
+                                     anci.faicon('s,'+i.slice(3))+" | "+
+                                     anci.faicon('b,'+i.slice(3))  ));
+    arr.unshift("name, r, s, b");
+    
+    anci.showlist(arr,true);
+  }
 }
 
-anci.faicon=anci.FontAwesomeIcon;
+var faicon = FontAwesomeIcon ;
+anci._absorb( faicon , "faicon" ) ;
 
-anci.ShowProgress=function(msg)
+
+function ShowProgress(msg)
 {
   if(!window.progress_fullscreen)
   {
@@ -1144,31 +1491,40 @@ anci.ShowProgress=function(msg)
     msg=(msg || "Loading... 載入中...")+"";
     ge("progress_fullscreen").innerHTML=msg;
     ge("progress_fullscreen").style.display="inline";
-};
+}
 
-anci.showp=anci.ShowProgress;
+var showp = ShowProgress ;
+anci._absorb( showp , "showp" ) ;
 
-anci.HideProgress=function()
+
+function HideProgress()
 {
   if(window.progress_fullscreen)
     ge("progress_fullscreen").onclick();
-};
+}
 
-anci.hidep=anci.HideProgress;
+var hidep = HideProgress ;
+anci._absorb( hidep , "hidep" ) ;
 
-anci.ShowPopup=async function(msg,delayMilliseconds)
+
+async function ShowPopup(msg,delayMilliseconds)
 {
-    msg=(msg || "Hello 你好")+"";
-    anci.ShowProgress(msg);
-    await anci.Sleep(delayMilliseconds || msg.length * 300);
+  msg=(msg || "Hello 你好")+"";
+
+  anci.ShowProgress(msg);
+
+  await anci.Sleep(delayMilliseconds || msg.length * 300);
+
 	anci.HideProgress();
-};
+}
 
-anci.toast=anci.ShowPopup;
+var toast = ShowPopup ;
+anci._absorb( toast , "toast" ) ;
 
 
 
-alert2=async (msg,textAsHtml,focus_ok=true)=>{
+async function Alert2(msg,textAsHtml,focus_ok=true)
+{
   if(msg && (msg.constructor==Object || msg.constructor==Array))
     msg=JSON.stringify(msg,null,1);
 
@@ -1176,10 +1532,9 @@ alert2=async (msg,textAsHtml,focus_ok=true)=>{
 
   var uniqueID=anci.rndtime();
 
-
   var dlg=$(`<div>
-</div>
-`)
+            </div>
+           `)
           .css("position","fixed")
           .css("width","80vw")
           .css("height","80vh")
@@ -1192,14 +1547,22 @@ alert2=async (msg,textAsHtml,focus_ok=true)=>{
           .css("font-size","20px")
           .css("padding","10px")
           .css("overflow","auto")
-          .attr("onclick",`$(this).remove();anci.alert2_resolves['${uniqueID}']?.();setTimeout(()=>{delete anci.alert2_resolves['${uniqueID}'];},2000);`);
+          .attr("onclick",
+  `$(this).remove();anci.alert2_resolves['${uniqueID}']?.();setTimeout(()=>{delete anci.alert2_resolves['${uniqueID}'];},2000);`);
 
   if(textAsHtml)
     dlg.html(msg);
   else
     dlg[0].innerText=(msg);
 
-  dlg.append(`<div class="text-center"><button onclick="anci.alert2_resolves['${uniqueID}']?.($(this).parent().parent().find('textarea').val());">OK</button></div>`);
+  dlg.append(`<div class="text-center">
+                  <button onclick="event.stopPropagation();$(this).parent().parent()[0].scroll(0,0)">
+                    ↑Top↑
+                  </button>&nbsp;&nbsp;
+                  <button onclick="anci.alert2_resolves['${uniqueID}']?.($(this).parent().parent().find('textarea').val());">
+                    OK
+                  </button>
+              </div>`);
 
   $("body").append(dlg);
 
@@ -1210,21 +1573,122 @@ alert2=async (msg,textAsHtml,focus_ok=true)=>{
 	  anci.alert2_resolves[uniqueID]=r=>resolve(r);
   });
 
-};
+}
 
-anci.alert2=alert2;
-alert2.Name="Alert2";
+var alert2 = Alert2 ;
+anci._absorb( alert2 , "alert2" ) ;
 
-anci.Prompt=async (msg,default_value,textAsHtml)=>
+
+async function AlertChain(msg)
+{
+  await alert2( msg );
+  return msg ;
+}
+
+var alertc = AlertChain ;
+anci._absorb( alertc , "alertc" ) ;
+
+
+async function Prompt(msg,default_value,textAsHtml)
 {
   msg=(msg || document.title)+"";
   return await alert2(`${textAsHtml?msg:anci.ttoh(msg)}<br><textarea style="width:100%;height:70%" onclick="event.stopPropagation();">${default_value || ""}</textarea>`,true,false)
 }
 
-anci.prompt=anci.Prompt;
+var prompt = Prompt ;
+anci._absorb( prompt , "prompt" ) ;
 
 
-anci.showlist=async (title_optional,list,listAsHtml,multi_select)=>{
+async function ShowUrlInIframe( url , showCrossOrigin)
+{
+  if( ! url ) return false;
+  url+="";
+  
+  if( await anci.hasurl( url ) || url.startsWith('blob') || showCrossOrigin )
+  {
+  
+    await alert2(`<iframe style="width:100%;height:85%;
+          background-color:white;"
+          src="${url}">
+          </iframe>
+          
+          <div style="text-align:center;"><button onclick="event.stopPropagation();anci.openu(  $(this).parent().prev().attr('src')  )">
+                    ${anci.faicon('s,external-link-alt')}
+                    </button>${anci.faicon('s,link')}</div>
+                    
+          ` , true,false );
+          
+    return "Success: Opened" + hh + url;    
+  
+  }
+}
+
+var showu = ShowUrlInIframe ;
+anci._absorb( showu , "showu" ) ;
+
+
+async function ShowContentInIframe( content )
+{
+  if( ! content ) 
+      return false;
+  
+  
+    let ff=$(`<iframe style="width:100%;height:70vh;
+          background-color:white;">
+          </iframe>`);
+
+    ff.attr("srcdoc",content+"");
+
+    alert2(`<div class="class-for-appending-iframe"></div>`,true,false)
+
+    $(".class-for-appending-iframe").append(ff);
+    
+    ff.after( `<div style="text-align:center;"><button onclick="event.stopPropagation();anci.showcn(  $(this).parent().prev().attr('srcdoc')  )">
+                    ${anci.faicon('s,external-link-alt')}
+                    </button> ${anci.faicon('s,file-alt')}</div>` )
+
+    //await anci.sleep(1000);
+
+    return ff[0].contentWindow;
+  
+}
+
+var showc = ShowContentInIframe ;
+anci._absorb( showc , "showc" ) ;
+
+
+function createHtmlBlobUrl(htmlString) {
+  const blob = new Blob([htmlString], { type: 'text/html' });
+  return URL.createObjectURL(blob);
+}
+
+async function ShowContentInNewWindow( content )
+{
+  if( ! content ) 
+      return false;
+  else
+  {
+    content+="";
+    
+    let burl = createHtmlBlobUrl( content ) ;
+    
+    return anci.openu( burl );
+    
+    /*
+    var cwin = anci.openu("about:blank") ;
+	  cwin.document.write(content);
+
+    return cwin;
+    */
+  }
+}
+
+var showcn = ShowContentInNewWindow ;
+anci._absorb( showcn , "showcn" ) ;
+
+
+async function CreateListDialog(title_optional,list,listAsHtml,multi_select)
+{
   if(!list || typeof(list)=='boolean')
   {
 	  multi_select=listAsHtml;
@@ -1256,7 +1720,20 @@ anci.showlist=async (title_optional,list,listAsHtml,multi_select)=>{
   <li 
   class="list-group-item list-group-item-danger text-center" 
   onclick="anci.showlist_resolves['${uniqueID}']?.('');setTimeout(()=>{delete anci.showlist_resolves['${uniqueID}'];},2000);">
-    取消Cancel
+    取消Cancel &nbsp;&nbsp;
+    
+    <button onclick="event.stopPropagation();
+    (async ()=>{
+    let p = await prompt('Search for?(Leave blank to clear filtering) 請輸入篩選詞(留空清除篩選)');
+    p = (p || '').toLowerCase();
+    let i = $(this).parent().nextAll();
+    if( !p ){ i.show(); return; }
+    i.hide(); 
+    i.filter((ind,ii)=>$(ii).text().trim()
+                               .toLowerCase().includes(p)).show();
+    })();">
+  ${anci.faicon('s,search')}</button>
+    
   ${!multi_select?"":`
   <textarea style="display:none;">"multi_items"</textarea>
   `}
@@ -1286,13 +1763,14 @@ else
 	resolve("");
 
   })); //new Promise
-};
 
-anci.showlist.Name="ShowList";
+}
 
-anci.CreateListDialog=anci.showlist;
+var showlist = CreateListDialog ;
+anci._absorb( showlist , "showlist" ) ;
 
-anci.DoubleClick=(single_click_handler,double_click_handler,button_this,event_obj)=>
+
+function DoubleClick(single_click_handler,double_click_handler,button_this,event_obj)
 {
   if(button_this.getAttribute("clicked_before"))
     {
@@ -1307,11 +1785,14 @@ anci.DoubleClick=(single_click_handler,double_click_handler,button_this,event_ob
     }
 }
 
-anci.dclick=anci.DoubleClick;
+var dclick = DoubleClick ;
+anci._absorb( dclick , "dclick" ) ;
 
-}  //  GUI End
 
-{  //  String handling
+  // #endregion  }  GUI
+
+
+  // #region  {  String handling
 
 // base64 <-> bytes Array <-> string
 
@@ -1327,7 +1808,8 @@ let base64DecodeChars = new Array(
     41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1);
 
 
-anci.Base64ToBarr=(str)=>{
+function Base64ToBarr(str)
+{
 	str+="";
 
     var cbyte=0;
@@ -1383,9 +1865,12 @@ anci.Base64ToBarr=(str)=>{
     return out;
 }
 
-anci.b64arr=anci.Base64ToBarr;
+var b64arr = Base64ToBarr ;
+anci._absorb( b64arr , "b64arr" ) ;
 
-anci.BarrToBase64=(str)=>{
+
+function BarrToBase64(str)
+{
     var out, i, len;
     var c1, c2, c3;
 
@@ -1419,34 +1904,45 @@ anci.BarrToBase64=(str)=>{
     return out;
 }
 
-anci.arrb64=anci.BarrToBase64;
+var arrb64 = BarrToBase64 ;
+anci._absorb( arrb64 , "arrb64" ) ;
 
-anci.Base64Encode=(str="")=>{
+
+function Base64Encode(str="")
+{
 let e=new TextEncoder();
 return anci.arrb64(e.encode(str+""));
 }
 
-anci.b64e=anci.Base64Encode;
+var b64e = Base64Encode ;
+anci._absorb( b64e , "b64e" ) ;
 
-anci.Base64Decode=(str="")=>{
+
+function Base64Decode(str="")
+{
 let d=new TextDecoder();
 return d.decode(new Uint8Array(anci.b64arr(str+"")));
 }
 
-anci.b64d=anci.Base64Decode;
+var b64d = Base64Decode ;
+anci._absorb( b64d , "b64d" ) ;
+
 
 //  Text <-> Html
 
-anci.TextToHtml=(text="")=>
+
+function TextToHtml(text="")
 {
   var cvt=$("<div>")
   cvt[0].innerText=text+""
   return cvt.html()
 }
 
-anci.ttoh=anci.TextToHtml;
+var ttoh = TextToHtml ;
+anci._absorb( ttoh , "ttoh" ) ;
 
-anci.HtmlToText=(html="")=>
+
+function HtmlToText(html="")
 {
   html+='';
   html = html.replace(/<style([\s\S]*?)<\/style>/gi, '');
@@ -1461,27 +1957,34 @@ anci.HtmlToText=(html="")=>
   return html;
 }
 
-anci.htot=anci.HtmlToText;
+var htot = HtmlToText ;
+anci._absorb( htot , "htot" ) ;
 
-}  //  String handling End
 
-{  //  Time handling
+  // #endregion  }  String handling
 
-anci.Sleep=(milliSeconds)=>
+
+  // #region  {  Time handling
+
+
+function Sleep(milliSeconds)
 {
     if(isNaN(milliSeconds))
       milliSeconds=100;
     else
       milliSeconds-=0;
 
-    return new Promise(resolve=>{
+  return new Promise(resolve=>{
     setTimeout(resolve,milliSeconds);
 	});
 }
 
-anci.sleep=anci.Sleep;
+var sleep = Sleep ;
+anci._absorb( sleep , "sleep" ) ;
 
-anci.WaitForValue=async (obj,key,value,milliSeconds)=>{
+
+async function WaitForValue(obj,key,value,milliSeconds)
+{
 	if(value!=null)
 	{
 	  while(obj[key]!=value)
@@ -1494,80 +1997,11 @@ anci.WaitForValue=async (obj,key,value,milliSeconds)=>{
 	}
 }
 
-anci.waitv=anci.WaitForValue;
+var waitv = WaitForValue ;
+anci._absorb( waitv , "waitv" ) ;
 
-anci.SaveValue = async (...i)=>
-    {
-      if(i.length==1)
-        [ key_name, value, database_file ] =
-          [ null, i[0], 'default_db' ];
-      else if(i.length==2)
-        [ key_name, value, database_file ] =
-          [ i[0], i[1], 'default_db' ];
-      else if(i.length==3)
-        [ key_name, value, database_file ] = i ;
-       
-      key_name+=""; 
-      let appd="/home/"+(await anci.appn);
-      if( ! await anci.hasd(appd) ) 
-        await anci.mkdir(appd);
-      database_file = appd +
-          "/" + database_file + ".txt";
-      if( await anci.hasf(database_file) )
-      {
-        try{
-        var obj=JSON
-              .parse( await anci.rf(database_file) );
-        }catch(e){ var obj={}; }
-      }
-      else
-        var obj={};
 
-      obj[ key_name ] = value;
-      try{
-      var ret=await anci.wf( database_file, 
-                                             JSON.stringify(obj) );
-      }catch(e){  var ret=e.stack;  }
-      return ret;
-    };
-anci.savev=anci.SaveValue;
-
-anci.LoadValue = async (optional_key_name,
-                             optional_defvalue,
-                             optional_database_file)=>
-    {
-      if(optional_key_name==null)
-        optional_key_name='null';
-      if(optional_defvalue==null)
-        optional_defvalue="";
-      if(!optional_database_file)
-        optional_database_file='default_db';
-
-      optional_key_name+=""; 
-      let appd="/home/"+(await anci.appn);
-      if( ! await anci.hasd(appd) ) 
-        await anci.mkdir(appd);
-
-      let database_file = appd +
-          "/" + optional_database_file + ".txt";
-      if( await anci.hasf(database_file) )
-      {
-        try{
-        var obj=JSON
-              .parse( await anci.rf(database_file) );
-        }catch(e){ var obj={}; }
-      }
-      else
-        var obj={};
-      
-      let ret=obj[ optional_key_name ];
-      if(ret==null) ret=optional_defvalue;
-
-      return ret;
-    };
-anci.loadv=anci.LoadValue;
-
-anci.RandomTimestamp=(digits_of_rnd=2)=>
+function RandomTimestamp(digits_of_rnd=2)
 {
   if( isNaN(digits_of_rnd) ) digits_of_rnd=2;
   var min = "1".repeat(digits_of_rnd)-0;
@@ -1577,64 +2011,80 @@ anci.RandomTimestamp=(digits_of_rnd=2)=>
   return rnd+""+Date.now();
 }
 
-anci.rndtime=anci.RandomTimestamp;
+var rndtime = RandomTimestamp ;
+anci._absorb( rndtime , "rndtime" ) ;
 
-anci.Timer=function(action_function,interval_msec)
+
+function Timer(action_function,interval_msec)
 {
-    this.action=action_function;
-    this.interval=interval_msec;
-    //alert(this.ctrl==null);
-    this.start=function()
-      {
-      this.stop();
-      if(this.action!=null && this.interval>0)
+  this.action=action_function;
+  this.interval=interval_msec;
+  
+  this.start=function()
+  {
+    this.stop();
+    if(this.action!=null && this.interval>0)
       this.ctrl=setInterval(this.action,interval_msec);
-      }
-    this.stop=function()
-      {
-      if(this.ctrl!=null)
+  }
+  this.stop=function()
+  {
+    if(this.ctrl!=null)
       clearInterval(this.ctrl);
-      }
+  }
 }
 
-anci.timer=anci.Timer;
-
-}  //  Time handling End
-
+var timer = Timer ;
+anci._absorb( timer , "timer" ) ;
 
 
-}  //  Common libraries End
+  // #endregion  }  Time handling
 
 
+// #endregion  }  Common libraries
+
+
+anci.GenerateNameForCapitalFunctions=()=>{
+  for(let i of Object.keys(anci))
+  {
+    if(anci[i] && typeof anci[i]=="function" && (i+"").toLowerCase()!=i) 
+      anci[i].Name=i;
+      
+    if(anci[i] && typeof anci[i]=="function")
+    {
+      anci[i].copy=()=>anci.setcb(anci[i].toString())
+      anci[i].show=()=>alert2(anci[i].toString())
+    } 
+  }
+}
 
 
 //  Execution part 立即執行的部分 可能會污染全局
 
-for(let i of Object.keys(anci))
-  {
-    if(anci[i] && typeof anci[i]=="function" && (i+"").toLowerCase()!=i) 
-      anci[i].Name=i;
-  }
+// #region  {  Immediate Execution
+
+anci.GenerateNameForCapitalFunctions();
 
 globalThis.anci=anci;  //  will change to export in the future 
 
 //console.log("anci ready");
 
-if(globalThis.window == globalThis)  //  in a browser environment 
+if( InBrowser )  //  in a browser environment 
 {  
-  globalThis.alert2=alert2;
-  globalThis.prompt2 = globalThis.prompt;
-  globalThis.prompt = anci.Prompt;
+  globalThis.alert2 = alert2;
+  globalThis.prompt2 = anci.Prompt;
 
 
   anci.query = anci.parseurlp(location.href);
 
-  window.passwd = window.passwd || anci.query.passwd || '' ;
+  anci.passwd = anci.passwd || anci.query.passwd || '' ;
 
   if(location.pathname.endsWith("/main.app"))
-    window.platform = "web";
-  else
-    window.platform = window.platform || anci.query.platform || "android";
+    anci.platform = "web";
+  else if(location.pathname.startsWith("/android_asset/") ||
+          location.pathname.startsWith("/storage/emulated/"))
+    anci.platform = "android";
+
+    anci.platform = anci.query.platform || anci.platform || "web";
     
   //  Ensure jQuery and progress dialog and file upload control
   if(typeof(jQuery)!="function")
@@ -1666,7 +2116,7 @@ if(globalThis.window == globalThis)  //  in a browser environment
   if(  typeof(OnData) == "function"  )
     await OnData(true);
 
-  if(window.platform=="android")
+  if(anci.platform=="android")
   {
     await anci.SetOrientation(anci.DroidOrientation || "Default");
     anci.AppVersion = (await anci.ver) || 0.87;
@@ -1678,17 +2128,288 @@ if(globalThis.window == globalThis)  //  in a browser environment
 }  //  in a browser environment 
 else  //  in a nodejs runtime
 {
-  anci.help();
+  InNodeRuntime = true ;
 }
 
-
-{  //  Android DroidScript part
-
-if(globalThis.platform == "android")
-{  //  if platform matches
+// #endregion  }  Immediate Execution
 
 
-{  //  Node API
+
+
+
+
+
+
+
+
+// #region  {  Electron / NodeJS client part
+
+
+
+anci.nodeapi=(data,synchronized, justTestRemote)=>{  
+
+  if(!data)
+    return false;
+
+  var url;
+
+  url=( anci.query.storage_location_url || (  ge("storage_location_url") && ge("storage_location_url").value  ) ||
+  	    "local"  
+	  ).trim();
+  
+  if(ge("storage_location_url"))
+    ge("storage_location_url").value=url;
+
+  var xhr;
+  if (window.XMLHttpRequest)
+  {
+    xhr = new XMLHttpRequest();
+  }
+  else
+  {
+    // code for older browsers
+    xhr = new ActiveXObject("Microsoft.XMLHTTP");
+  }
+  
+  var dobj;
+
+  if(url=="local")
+  {
+    var localorp="/storage_local"
+    
+    if( justTestRemote )
+        return false;
+
+    if(typeof data=="object")
+      data=JSON.stringify(data);
+  }
+  else
+  {
+    //  default: operationing under /main.app
+    var localorp="/storage_proxy";
+
+    try{
+    
+    if(typeof data=="string")
+      dobj = JSON.parse(data || "{}");
+    else
+      dobj = data;
+
+    dobj.url=[];
+    if(url.startsWith("["))
+      dobj.url.push(...JSON.parse(url));
+    else
+      dobj.url.push(url);
+	
+    if(!location.pathname.endsWith("/main.app"))  //  no /storage_proxy available
+    {  
+      localorp = dobj.url.shift() ;
+      if(anci.passwd)
+        localorp += "?passwd="+anci.passwd;
+    }
+
+    data=JSON.stringify(dobj);
+
+    }catch(e){ return e.stack; }
+
+  }  //  url not local 
+
+if( justTestRemote )
+{
+  if( localorp=="/storage_proxy" )
+  {
+    if( isSameOriginStrict( dobj?.url?.[0] , location.href ) )
+      return false ; 
+    else
+      return dobj?.url?.[0] ;
+  }
+  else if( isSameOriginStrict( localorp , location.href ) )
+  {
+    return false ;
+  }
+  else
+    return localorp;
+}
+
+if(!synchronized || synchronized=="pm")
+{
+  return new Promise(resolve=>{
+    xhr.onreadystatechange = function()
+    {
+      if ((xhr.readyState == 4 && xhr.status == 200))
+        resolve(xhr.responseText);
+    };
+
+    xhr.open("POST", localorp, true);
+    xhr.setRequestHeader("Content-type", "application/json");
+    xhr.send(data);
+
+  });
+}
+else  //  synchronized xhr not recommended
+{
+  xhr.open("POST", localorp, false);
+  xhr.setRequestHeader("Content-type", "application/json");
+  xhr.send(data);
+  
+  return (xhr.responseText);
+}
+
+}  //  nodeapi ends
+
+
+/*
+if(anci.platform == "web" || 
+   anci.platform == "electron" || InNodeRuntime)*/
+//  if platform is web or electron
+
+
+  nodeapi=anci.nodeapi;
+
+
+{ //  File system operations
+
+
+anci.BrowserDownloadFile=(b64_or_arr,file_name="downloaded.txt")=>
+{
+  if(typeof(b64_or_arr)=="string" || b64_or_arr?.[0]?.length>0)
+    var barr=new Uint8Array(anci.b64arr(b64_or_arr+""));
+  else
+    var barr=new Uint8Array(b64_or_arr);
+
+  var blob=new Blob([barr],{type:"application/octet-stream"});
+  saveAs(blob,file_name);
+}
+
+anci.bdlf=anci.BrowserDownloadFile;
+
+
+}  //  File system operations End
+
+
+anci.GetClipboardText=async function()
+{
+var s=await navigator.clipboard.readText();
+return s;
+};
+
+anci.getcb=anci.GetClipboardText;
+
+Object.defineProperty(anci,"cb",{set:anci.setcb,get:anci.getcb,configurable:true});
+
+
+anci.GetAppPath=async function(onlyName)
+{
+    var s = location.pathname
+                .split("/").at(-2) || "";
+
+    var tmps="/sdcard/napps/";
+   
+  if(onlyName)
+	  return s;
+   
+  return tmps+s;
+};
+
+anci.GetAppName=()=>anci.GetAppPath(true);
+
+
+anci.GetVersion=async function()
+ {
+   return anci.AppVersion || "0.0";
+ };
+ 
+anci.getappp=anci.GetAppPath;
+anci.getappn=anci.GetAppName;
+anci.getv=anci.GetVersion;
+
+Object.defineProperty(anci,"appp",{get:anci.getappp,configurable:true});
+Object.defineProperty(anci,"appn",{get:anci.getappn,configurable:true});
+Object.defineProperty(anci,"ver",{get:anci.getv,configurable:true});
+
+
+function OpenUrl(url)
+{
+  url = ( url || "" ) + "";
+	if(anci.platform == "electron")
+	{
+	  let upmost=window;
+	  while(upmost.opener!=null)
+		upmost=upmost.opener;
+	  return upmost.open(url);
+	}
+	else
+	  return window.open(url);
+    
+}
+
+var openu=OpenUrl;
+anci._absorb( openu , "openu" );
+
+
+
+function TextToSpeech( rtext, rpitch, rrate )
+{
+try{
+  rtext+='';
+  
+  var msg = new window.SpeechSynthesisUtterance(rtext);
+
+  msg.pitch=rpitch || 1;
+  msg.rate=rrate || 1;
+
+var engc=0;
+
+for(var i=0;i<rtext.length;i++)
+{
+if(rtext.charCodeAt(i)<128)
+engc++;
+}
+
+if(engc/rtext.length>0.5)
+msg.lang='en-US';
+else
+msg.lang='zh-TW';
+
+
+return new Promise(resolve=>{
+
+msg.onend=resolve;
+
+window.speechSynthesis.cancel()
+window.speechSynthesis.speak(msg);
+
+});
+
+
+}catch(e){alert(e.stack);}
+}
+
+var tts = TextToSpeech ; 
+anci._absorb( tts , 'tts' ) ;
+
+
+
+anci.GenerateNameForCapitalFunctions();
+
+
+//  if platform is web or electron End
+
+
+// #endregion  }  Electron / NodeJS client part
+
+
+
+
+
+
+
+
+
+
+// #region  {  Android DroidScript part
+
+
 
 anci.dsapi=(sobj)=>
 {
@@ -1705,18 +2426,13 @@ anci.dsapi=(sobj)=>
 
     return new Promise(resolve=>{
       anci.droidscript_resolves[sobj.func]=resolve;
-      console.log( window.passwd+"|"+sobj.func ) ;
+      console.log( anci.passwd+"|"+sobj.func ) ;
     });
-};
-
-nodeapi=anci.dsapi;
-
-{  //  Network 
+};  //  dsapi
 
 
 
-
-
+  // #region  {  Network 
 
 
 anci.GetUrlDate=(url)=>{
@@ -1744,6 +2460,7 @@ $.ajax({
 
 anci.urlmtime=anci.GetUrlDate ;
 
+
 anci.GetUrlSize=(url)=>{
   url = ( url || "" ) + "";
 return new Promise(resolve=>{
@@ -1766,16 +2483,24 @@ $.ajax({
 });
 };
 
+
 anci.urlsize=anci.GetUrlSize ;
 
 
-}  //  Network End
+  // #endregion  }  Network
 
 
-{ //  File system operations
+if(anci.platform == "android" || InNodeRuntime)
+{  //  if platform is DroidScript
 
 
-anci.BrowserDownloadFile=async (b64_or_arr,file_name="downloaded.txt")=>
+  nodeapi=anci.dsapi;
+
+
+  // #region  {  ds File system operations
+
+
+let BrowserDownloadFile=async function(b64_or_arr,file_name="downloaded.txt")
     {
       if(typeof(b64_or_arr)=="string" || b64_or_arr?.[0]?.length>0)
         var barr = Array
@@ -1799,26 +2524,33 @@ anci.BrowserDownloadFile=async (b64_or_arr,file_name="downloaded.txt")=>
       return await anci.wfb(fullp,barr);
     }
 
-anci.bdlf=anci.BrowserDownloadFile;
+anci._absorb( BrowserDownloadFile , "bdlf" ) ;
 
-anci.OpenFile=async function(filepath,mime,forceSystemOpen)
+
+var openf = async function OpenFile(filepath, mime,
+                                                                         forceSystemOpen)
 {
-  filepath+='';
+  if( ! filepath )
+    return false;
+    
+  filepath += '';
 
   if( filepath.startsWith("http") || filepath.startsWith("data:") || filepath.startsWith("content"))
     var rfilepath=filepath;
   else
-    var rfilepath=await anci.realp( filepath ) ;
+  {
+    var rfilepath = await anci.realp( filepath ) ;
+    
+    let rmurl = anci.isremote() ;
+    if( ! rmurl )
+      rfilepath = location.origin + rfilepath ;
+    else
+      rfilepath = new URL( rmurl ).origin + rfilepath ;
+  }
 
   if(await anci.hasurl(rfilepath) && !forceSystemOpen)
   {
-
-    await alert2(`<iframe style="width:100%;height:85%;
-          background-color:white;"
-          src="${rfilepath}">
-          </iframe>` , true,false );
-    return "Success: Opened" + hh + rfilepath;    
-
+      return await anci.showu( rfilepath );
   }
   else if( await anci.hasf(rfilepath) && !forceSystemOpen )
   {
@@ -1829,14 +2561,15 @@ anci.OpenFile=async function(filepath,mime,forceSystemOpen)
     var sobj={"cmd":"OpenFile",
                 "param":[filepath+'',mime+''] };
 
-    await anci.sleep(1000);
+    //await anci.sleep(1000);
   
     return nodeapi(sobj);
 
   }
 }  //  anci.OpenFile
 
-anci.openf=anci.OpenFile;
+anci._absorb( openf , "openf" ) ;
+
 
 anci.UpdateAnci=async function(){
   let res=await anci.showlist( "Which one to update?", 
@@ -1903,7 +2636,11 @@ anci.UpdateAnci=async function(){
 anci.update=anci.UpdateAnci ;
 
 
-}  //  File system operations End
+  // #endregion  }  ds File system operations
+
+
+    // #region  {  batching simple functions
+
 
 anci.GetByFunctionName=function(funcName,param)
 {
@@ -1911,7 +2648,6 @@ anci.GetByFunctionName=function(funcName,param)
   return nodeapi(sobj);
 };
 
-{  //  batching simple functions
 let fnarr=["GetClipboardText",
            "SetOrientation",
 		   "GetAppPath",
@@ -1923,14 +2659,32 @@ let fnarr=["GetClipboardText",
 		   "SetSharedApp",
 		   "GetSharedText",
 		   "GetSharedFiles",
-		   "DisableKeys",
+		   "DisableKeys", "GetConsoleMessages",
 	           "Exit",
 	           "GetPackageName" ];
+	           
 for(let i of fnarr)
-	anci[i]=(...param)=>anci.GetByFunctionName(i,param);
+{
+	let func=(...param)=>anci.GetByFunctionName(i,param);
+	func.Name = i ;
+	anci._absorb( func );
+}
 	
-}  //  batching simple functions End
 
+anci.OpenUrlDs=anci.OpenUrl;
+
+anci.OpenUrl=url=>
+{
+  if( ! url ) return false;
+  url+="";
+  
+  if( url.startsWith('http') )
+    anci.OpenUrlDs( url )
+  else
+    location.href=( url );
+}
+
+	
 anci.getcb=anci.GetClipboardText;
 anci.seto=anci.SetOrientation;
 anci.getappp=anci.GetAppPath;
@@ -1942,14 +2696,22 @@ anci.wakelock=anci.PreventScreenLock;
 anci.getsharedt=anci.GetSharedText;
 anci.getsharedf=anci.GetSharedFiles;
 anci.disablekeys=anci.DisableKeys;
+
+anci.getcslm=anci.GetConsoleMessages;
+
 anci.exit=anci.Exit;
 
 anci.getpkn=anci.GetPackageName;
 
-Object.defineProperty(anci,"cb",{set:anci.setcb,get:anci.getcb});
-Object.defineProperty(anci,"appp",{get:anci.getappp});
-Object.defineProperty(anci,"appn",{get:anci.getappn});
-Object.defineProperty(anci,"ver",{get:anci.getv});
+
+Object.defineProperty(anci,"cb",{set:anci.setcb,get:anci.getcb,configurable:true});
+Object.defineProperty(anci,"appp",{get:anci.getappp,configurable:true});
+Object.defineProperty(anci,"appn",{get:anci.getappn,configurable:true});
+Object.defineProperty(anci,"ver",{get:anci.getv,configurable:true});
+
+
+    // #endregion  }  batching simple functions End
+
 
 anci.SetOnKey_callbacks=[];
 
@@ -1973,7 +2735,8 @@ anci.SetOnKey_callback=(...arr)=>
   }
 }
  
-anci.TextToSpeech=function(text,pitch,rate,stream,locale,engine)
+ 
+var tts = function TextToSpeech(text, pitch, rate, stream, locale, engine)
 {
   pitch=pitch || 1; rate=rate || 1;
   text+='';
@@ -1982,272 +2745,122 @@ anci.TextToSpeech=function(text,pitch,rate,stream,locale,engine)
   return nodeapi(sobj);
 };
 
-anci.tts=anci.TextToSpeech;
+anci._absorb( tts , "tts" );
 
 
-}  //  Node API End
+anci.GenerateNameForCapitalFunctions();
 
 
-for(let i of Object.keys(anci))
-  {
-    if(anci[i] && typeof anci[i]=="function" && (i+"").toLowerCase()!=i) 
-      anci[i].Name=i;
-  }
+}  //  if platform is DroidScript End
 
-
-}  //  if platform matches End
-
-}  //  Android DroidScript part End
-
-
-{  //  Electron / NodeJS client part
-
-if(globalThis.platform == "web" || globalThis.platform == "electron")
-{  //  if platform matches
-
-
-{  //  Node API
-
-
-anci.nodeapi=(data,synchronized)=>{  
-
-  if(!data)
-    return false;
-
-  var url;
-
-  url=( anci.query.storage_location_url || (  ge("storage_location_url") && ge("storage_location_url").value  ) ||
-  	    "local"  
-	  ).trim();
-  
-  if(ge("storage_location_url"))
-    ge("storage_location_url").value=url;
-
-  var xhr;
-  if (window.XMLHttpRequest)
-  {
-    xhr = new XMLHttpRequest();
-  }
-  else
-  {
-    // code for older browsers
-    xhr = new ActiveXObject("Microsoft.XMLHTTP");
-  }
-
-  if(url=="local")
-  {
-    var localorp="/storage_local"
-
-    if(typeof data=="object")
-      data=JSON.stringify(data);
-  }
-  else
-  {
-    //  default: operationing under /main.app
-    var localorp="/storage_proxy";
-
-    var dobj;
-
-    try{
-    
-    if(typeof data=="string")
-      dobj = JSON.parse(data || "{}");
-    else
-      dobj = data;
-
-    dobj.url=[];
-    if(url.startsWith("["))
-      dobj.url.push(...JSON.parse(url));
-    else
-      dobj.url.push(url);
-	
-    if(!location.pathname.endsWith("/main.app"))  //  not same origin and no /storage_proxy available
-    {  
-      localorp = dobj.url.shift() ;
-      if(window.passwd)
-        localorp += "?passwd="+window.passwd;
-    }
-
-    data=JSON.stringify(dobj);
-
-    }catch(e){ return e.stack; }
-
-  }  //  url not local 
-
-
-if(!synchronized || synchronized=="pm")
-{
-  return new Promise(resolve=>{
-    xhr.onreadystatechange = function()
-    {
-      if ((xhr.readyState == 4 && xhr.status == 200))
-        resolve(xhr.responseText);
-    };
-
-    xhr.open("POST", localorp, true);
-    xhr.setRequestHeader("Content-type", "application/json");
-    xhr.send(data);
-
-  });
-}
-else  //  synchronized xhr not recommended
-{
-  xhr.open("POST", localorp, false);
-  xhr.setRequestHeader("Content-type", "application/json");
-  xhr.send(data);
-  
-  return (xhr.responseText);
-}
-
-}  //  nodeapi ends
-
-nodeapi=anci.nodeapi;
-
-{  //  Network 
-
-//  Currently no network functions peculiar to NodeJs/Electron client
-
-}  //  Network End
-
-
-{ //  File system operations
-
-
-anci.BrowserDownloadFile=(b64_or_arr,file_name="downloaded.txt")=>
-{
-  if(typeof(b64_or_arr)=="string" || b64_or_arr?.[0]?.length>0)
-    var barr=new Uint8Array(anci.b64arr(b64_or_arr+""));
-  else
-    var barr=new Uint8Array(b64_or_arr);
-
-  var blob=new Blob([barr],{type:"application/octet-stream"});
-  saveAs(blob,file_name);
-}
-
-anci.bdlf=anci.BrowserDownloadFile;
-
-}  //  File system operations End
-
-
-anci.GetClipboardText=async function()
-{
-var s=await navigator.clipboard.readText();
-return s;
-};
-
-anci.getcb=anci.GetClipboardText;
-
-Object.defineProperty(anci,"cb",{set:anci.setcb,get:anci.getcb});
-
-anci.GetAppPath=async function(onlyName)
- {
-   var tmps="/sdcard/napps/";
-   var s=location.href;
-   s=s.substr(s.indexOf(tmps)+tmps.length);
-   s=s.substr(0,s.indexOf("/main.app"));
-   
-   if(onlyName)
-	   return s;
-   
-   return tmps+s;
- };
-
-anci.GetAppName=()=>anci.GetAppPath(true);
-
-
-anci.GetVersion=async function()
- {
-   return anci.AppVersion || "0.0";
- };
- 
-
-anci.getappp=anci.GetAppPath;
-anci.getappn=anci.GetAppName;
-anci.getv=anci.GetVersion;
-
-Object.defineProperty(anci,"appp",{get:anci.getappp});
-Object.defineProperty(anci,"appn",{get:anci.getappn});
-Object.defineProperty(anci,"ver",{get:anci.getv});
-
-anci.OpenUrl=function(url)
-{
-  url = ( url || "" ) + "";
-	if(window.platform == "electron")
-	{
-	  let upmost=window;
-	  while(upmost.opener!=null)
-		upmost=upmost.opener;
-	  return upmost.open(url);
-	}
-	else
-	  return window.open(url);
-    
-};
-
-anci.openu=anci.OpenUrl;
+// #endregion  }  Android DroidScript part
 
 
 
 
-anci.TextToSpeech=function( rtext,rpitch,rrate)
-{
+
+
+
+
+
+
+//  in a node runtime, immediately show functions list
+if( InNodeRuntime )  
+  anci.help();
+
+
+//  Starts writing descriptions of all functions
 try{
-  rtext+='';
+
+  anci.dlf.Desc="Uses fetch to download url to Server folder";
+  anci.dlf.Test=` return await anci.dlf( 'https://api.github.com/',
+                                      '/media/gg.html' ); `
   
-  var msg = new window.SpeechSynthesisUtterance(rtext);
-
-  msg.pitch=rpitch || 1;
-  msg.rate=rrate || 1;
-
-var engc=0;
-
-for(var i=0;i<rtext.length;i++)
-{
-if(rtext.charCodeAt(i)<128)
-engc++;
-}
-
-if(engc/rtext.length>0.5)
-msg.lang='en-US';
-else
-msg.lang='zh-TW';
-
-
-return new Promise(resolve=>{
-
-msg.onend=resolve;
-
-window.speechSynthesis.cancel()
-window.speechSynthesis.speak(msg);
-
-});
-
-
-}catch(e){alert(e.stack);}
-};
-
-anci.tts=anci.TextToSpeech;
-
-
-}  //  Node API End
-
-
-for(let i of Object.keys(anci))
-  {
-    if(anci[i] && typeof anci[i]=="function" && (i+"").toLowerCase()!=i) 
-      anci[i].Name=i;
-  }
-
-
-}  //  if platform matches End
-
-}  //  Electron / NodeJS client part End
-
-
-try{
+  anci.xhr.Desc="Uses fetch to get url content" ;
+  anci.xhr.Test="return await anci.xhr`https://api.github.com` "
+  
+  anci.xhrt.Desc="Uses jQuery.ajax to get text, CORS+ for web"
+  anci.xhrt.Test=`return await anci.xhrt('Code.js');`
+  
   anci.hasurl.Desc="Uses jQuery.ajax to check for head, abide by CORS"
+  anci.hasurl.Test="return await anci.hasurl('Code.js');"
+  
+  anci.rfb.Test=`return await anci.rfb('/sd/Download/test.txt')`
+  
+  anci.wfb.Test=` return await anci.wfb('/sd/Download/test.txt',[ 0x48, 0x49, 240, 159, 152, 128, 10, 228, 184, 150, 231, 149, 140 ] ); `;
+  
+  anci.rf.Test=" return await anci.rf`/sd/Download/test.txt` "
+  
+  anci.rm.Test=" return await anci.rm`/media/gg.html` "
 
+  anci.filesize.Test=" return await anci.filesize`/sd/Download/test.txt` "
+  
+  anci.filemtime.Test=" return await anci.filemtime`/sd/Download/test.txt` "
+  
+  anci.urlmtime.Test=" return await anci.urlmtime('Code.js') "
+
+  anci.realp.Test="return await anci.realp('/bin');";
+
+  anci.lsr.Test=" return await anci.lsr`/bin` ";
+
+  anci.stat.Test=
+            " return await anci.stat`/bin/notepad/Code.js` " ;
+  
+  anci.setcb.Test=" return await anci.setcb('hello你好'); ";
+  
+  anci.getcb.Test=" return await anci.getcb() ";
+  
+  
+  anci.objbs.Test=" anci.objbs(anci); " ;
+  
+  anci.getcssc.Test=" return await anci.getcssc(); "
+  
+  anci.faicon.Desc="Get font-awesome icons; e.g. 's,search', use 'show' to show available icons";
+  
+  anci.faicon.Test=" anci.faicon`show` " ;
+  
+  anci.toast.Desc="Show a popup msg that will auto disappear";
+  anci.toast.Test=" anci.toast`hello🐬` ";
+  
+  anci.b64e.Test=" return anci.b64e('hi') "
+  anci.b64d.Test=" return anci.b64d('aGk=') "
+  
+  anci.rndtime.Test=" return anci.rndtime() "
+  
+  anci.bdlf.Test=" return await anci.bdlf( [111, 107, 240, 159, 166, 156 ] ) ";
+  
+  anci.openu.Test=" anci.openu('https://github.com') "
+  
+  anci.tts.Test=" return await anci.tts('Hi I am John') "
+  
+  anci.getappn.Test = " return await anci.appn ";
+  
+  anci.isremote.Test= "return anci.isremote()" ;
+  
+  
+  //  Below is android specific Desc & Test 以下為安卓專用
+  
+  anci.getcslm.Test=" return await anci.getcslm() ";
+  
+  anci.getsharedt.Test = " return await anci.getsharedt() " ;
+  
+  anci.getpkn.Test=" return await anci.getpkn() ";
+  
+  anci.seto.Desc=` Available values: 
+        Default,Portrait,Landscape,
+        ReversePortrait,ReverseLandscape, 
+        or use number 0~4 `;
+  
 
 }catch(e){
   console.log(e.stack);
 }
+
+
+
+
+
+
+
+
+

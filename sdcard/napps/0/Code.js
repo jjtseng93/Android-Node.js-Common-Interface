@@ -31,7 +31,7 @@ gbcache=
 	msg:"test msg",
 	applist:["app1","app2","app3"],
 	selectedApp:0,
-	platform_not_android: (window.platform!="android")
+	platform_not_android: (anci.platform!="android")
 };
 
   new Vue(

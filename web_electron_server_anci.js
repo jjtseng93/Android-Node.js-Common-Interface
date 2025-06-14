@@ -40,25 +40,39 @@ End of the block for letting this node app
 */
 
 function runApp(){
-	
+
+  
+// #region  {  constants and modules loading
+  
+
 const web_portn=8081;
 const hostName="::ffff:127.0.0.1";
 
+const hh="\r\n";
+const jss=JSON.stringify;
+const jsp=JSON.parse;
+const csl=console.log;
 
-var iconv=require("iconv-lite");  // for endoding conversion
-var https=require("https");
-var http = require("http");
-var url = require("url");
-var fs=require("fs");  // file system
-  var fse=require("fs-extra");
-  var fsp=fs.promises;
-var express=require("express");
-var app=express();
-fetch=require("node-fetch");
+const iconv=require("iconv-lite");  // for endoding conversion
+const https=require("https");
+const http = require("http");
+const url = require("url");
+const os = require('os');
+const fs=require("fs");  // file system
+  const fse=require("fs-extra");
+  const fsp=fs.promises;
+const express=require("express");
+const app=express();
+
+if(typeof fetch == "undefined")
+  var fetch = require("node-fetch");
+
 const util = require('util');
-var sentryr=fs.readFileSync(global.joinp("app_entry_template.html")).toString("utf8");
-//var sanci=fs.readFileSync(global.joinp("nlib/web_electron_api_anci.js")).toString("utf8");
-var sdefbox=`
+
+
+const sentryr=fs.readFileSync(global.joinp("app_entry_template.html")).toString("utf8");
+
+const sdefbox=`
 
 
 
@@ -73,17 +87,23 @@ var sdefbox=`
 
 
 `;
-var gbcache={};
-var gbsecret={};
 
-var passwd=(()=>
+const gbcache={};
+const gbsecret={};
+
+const passwd=(()=>
 {
   var min=100000001,max=999999999
   rnd=Math.floor(Math.random() * (max - min) + min)
   return rnd+""+Date.now();
 })()
 
-var pathn;
+
+// #endregion  }  constants and modules loading
+
+
+
+
 
 {  //  preset files
 if(!fexists(global.joinp("trusted.pass")))
@@ -101,22 +121,30 @@ if(fexists(global.joinp("pathmap.txt")))
 
 }  //  preset files end
 
-const hh="\r\n";
-const jss=JSON.stringify;
-const jsp=JSON.parse;
-const csl=console.log;
 
 
 
-app.use((req,res,next)=>{
-csl(new Date().toLocaleString()+"↓↓");
-csl("Client IP: "+req.connection.remoteAddress+hh+"Server IP: "+req.connection.localAddress);
-pathn=decodeURIComponent(req.path);
-csl(req.method+" "+pathn);
-csl(jss(req.query));
-csl(jss(req.headers)+hh);
 
-next();
+// #region  {  Server Routing
+
+
+var pathn;
+
+
+app.use((req,res,next)=>  //  log basic info for every request
+{
+  csl( new Date().toLocaleString()+"↓↓" );
+  csl("Client IP: "+req.socket.remoteAddress+hh+
+      "Server IP: "+req.socket.localAddress);
+
+  pathn=decodeURIComponent(req.path);
+
+  csl(req.method+" "+pathn);
+
+  csl(jss(req.query));
+  csl(jss(req.headers)+hh);
+  
+  next();
 });
 
 app.use(authfunc);
@@ -150,7 +178,7 @@ app.get("/pdf",(req,res)=>{
   .catch(e=>res.end(e.stack));
 });
 
-app.use((q,s,n)=>
+app.use((q,s,n)=>  //  Allow cross origin if passwd matches
 {
     if(q.query.passwd==passwd)
       s.set("Access-Control-Allow-Origin","*");
@@ -198,6 +226,63 @@ app.post("/storage_proxy",(req,res)=>{
 
 });
 
+
+function authfunc(req, res,next)
+{
+
+var tlist=jsp(trustedclients);
+
+var cryptip=(iipn,ikey)=>
+  {
+    return Math.floor(iipn*ikey).toString().substr(0,9).replace(".","");
+  }
+
+var cip=req.connection.remoteAddress;
+var otherpass=(cip.indexOf(":192.168.")!=-1 || cip.indexOf(":10.")!=-1 );
+
+if((tlist.ip).indexOf(cip)===-1 && !otherpass)
+  {
+    var cipn=cip;
+    cipn=cipn.split(":").join("").split(".").join("");
+    cipn=parseInt(cipn,16);
+
+    var goodauth=false;
+    tlist.tmpauths.forEach((item,index)=>
+      {
+        if(dexists(global.joinp(cryptip(cipn,item))))
+          {
+            goodauth=true;
+              tlist.tmpauths.splice(index,1);
+          }
+      }); // for each chech temp authentication
+    if(goodauth)
+      {
+      tlist.ip.unshift(cip);
+      trustedclients=jss(tlist);
+      fs.writeFileSync(global.joinp("trusted.pass"),trustedclients);
+        next();
+      }
+    else
+      {
+        var tkey=Math.ceil(new Date().getTime()/(Math.random()*90+10)).toString();
+        if(tlist.tmpauths.length>50) tlist.tmpauths=tlist.tmpauths.slice(0,49);
+        tlist.tmpauths.unshift(tkey);
+        trustedclients=jss(tlist);
+        fs.writeFileSync(global.joinp("trusted.pass"),trustedclients);
+        retres("Wrong Password!"+hh+"Please create a folder named:\""+cryptip(cipn,tkey)+"\" to verify"+hh,res);
+      }
+  } // if client ip not on list
+else
+  {
+    next();
+  }
+
+}  // authfunc
+
+
+// #endregion  }  Server Routing
+
+
 if(global.platform=="web")
 {
 
@@ -232,7 +317,6 @@ else if(global.platform=="electron")
 
 
 
-var os = require('os');
 
 csl( os.platform(), os.release(), global.platform );
 
@@ -266,19 +350,15 @@ Object.keys(ifaces).forEach(function (ifname) {
 
 csl("");
 
+
+
+
+
+// #region  {  Reading command prompt input
+
+
 process.stdin.setEncoding('utf8');
 
-/*
-process.stdin.on('readable', () => {
-  var chunk = process.stdin.read();
-  if (chunk !== null) {
-    if(chunk == "r\n" || chunk=="r\r\n") process.exit(1);
-    csl(jss(chunk));
-  }
-});
-*/
-
-{  //  Reading command prompt input
 	
 const readline = require('readline');
 
@@ -286,6 +366,7 @@ const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout
 });
+
 
 function pack_to_droidscript()
 {
@@ -322,6 +403,7 @@ function pack_to_droidscript()
   
 }
 
+
 function evaluate_stdin()
 {
 	console.log("Please enter the code you want to run 請輸入要執行的程式碼\r\n>");
@@ -332,6 +414,7 @@ function evaluate_stdin()
 		ask();
 	});
 }
+
 
 function ask()
 {
@@ -396,10 +479,12 @@ rl.question(">", (answer) => {
 
 }
 
+
 if(global.platform=="web")
   ask()
 
-}  // Reading command prompt input End
+
+// #endregion  }  Reading command prompt input 
 
 
 
@@ -427,57 +512,7 @@ if(global.platform=="web")
 
 
 
-function authfunc(req, res,next)
-{
 
-var tlist=jsp(trustedclients);
-
-var cryptip=(iipn,ikey)=>
-  {
-    return Math.floor(iipn*ikey).toString().substr(0,9).replace(".","");
-  }
-
-var cip=req.connection.remoteAddress;
-var otherpass=(cip.indexOf(":192.168.")!=-1 || cip.indexOf(":10.")!=-1 );
-
-if((tlist.ip).indexOf(cip)===-1 && !otherpass)
-  {
-    var cipn=cip;
-    cipn=cipn.split(":").join("").split(".").join("");
-    cipn=parseInt(cipn,16);
-
-    var goodauth=false;
-    tlist.tmpauths.forEach((item,index)=>
-      {
-        if(dexists(global.joinp(cryptip(cipn,item))))
-          {
-            goodauth=true;
-              tlist.tmpauths.splice(index,1);
-          }
-      }); // for each chech temp authentication
-    if(goodauth)
-      {
-      tlist.ip.unshift(cip);
-      trustedclients=jss(tlist);
-      fs.writeFileSync(global.joinp("trusted.pass"),trustedclients);
-        next();
-      }
-    else
-      {
-        var tkey=Math.ceil(new Date().getTime()/(Math.random()*90+10)).toString();
-        if(tlist.tmpauths.length>50) tlist.tmpauths=tlist.tmpauths.slice(0,49);
-        tlist.tmpauths.unshift(tkey);
-        trustedclients=jss(tlist);
-        fs.writeFileSync(global.joinp("trusted.pass"),trustedclients);
-        retres("Wrong Password!"+hh+"Please create a folder named:\""+cryptip(cipn,tkey)+"\" to verify"+hh,res);
-      }
-  } // if client ip not on list
-else
-  {
-    next();
-  }
-
-}  // authfunc
 
 function complement_appentry(wkp,appnp)
 {
@@ -507,51 +542,74 @@ function complement_appentry(wkp,appnp)
 	 return sentry;
 }  //  function complement_appentry End 
 
+
 function gen_app_html(req,res)
 {
 
 try{
 
-   var tindex=rrp(pathn).lastIndexOf("/");
-   var wkp=rrp(pathn).substr(0,tindex); // sdcard/napps/app_name
-   var appnp=wkp.substr(wkp.lastIndexOf("/")+1);  //  app_name
-   wkp+="/";  // sdcard/napps/app_name/
+  var tindex=rrp(pathn).lastIndexOf("/");
+  var wkp=rrp(pathn).substr(0,tindex); // sdcard/napps/app_name
+  var appnp=wkp.substr(wkp.lastIndexOf("/")+1);  //  app_name
+  wkp+="/";  // sdcard/napps/app_name/
 
-   var sui=fs.readFileSync(global.joinp(wkp+"UI.html")).toString("utf8");
-   tindex=sui.indexOf("id=\"storage_location_url\"");
-   if(tindex==-1)
-   {
-   sui="<textarea id=\"storage_location_url\" rows=\"2\" style=\"display:none;\">local</textarea>"+hh+hh+sui;
-   tindex=10;
-   }
+  let uip = global.joinp(wkp+"UI.html");
 
-   var s_code=fs.readFileSync(global.joinp(wkp+"Code.js")).toString("utf8");
+  if(!fexists(uip))
+    uip = global.joinp(wkp+"index.html");
+  if(!fexists(uip))
+    uip = global.joinp(wkp+"main.html");
+  if(!fexists(uip))
+    uip = global.joinp(wkp+"app.html");
+  if(!fexists(uip))
+    uip = global.joinp(wkp+appnp+".html");
+  if(!fexists(uip))
+  {
+    res.end("<h1>Server: No UI html found</h1>")
+    return false;
+  }
 
-   var sentry=complement_appentry(wkp,appnp);
 
-       var spasswd=`  window.passwd="${passwd}" ; `;
-       var stlocurl=req.query.storage_location_url;
-       if(stlocurl)
-         {
-           var tindex2=sui.indexOf("</textarea>",tindex);
-           tindex=sui.indexOf("\">",tindex)+2;
-           sui=sui.substr(0,tindex)+stlocurl+sui.substr(tindex2);
-         }
 
-   res.end(
+  var sui=fs.readFileSync(uip).toString("utf8");
+  tindex=sui.indexOf(`id="storage_location_url"`);
+  if( tindex==-1 )
+  {
+    sui=`<text`+`area id="storage_location_url" 
+           rows="2" style="display:none;">local</text`+`area>`+
+           hh+hh+sui;
+    tindex=10;
+  }
+
+  var s_code=fs.readFileSync(global.joinp(wkp+"Code.js")).toString("utf8");
+
+  var sentry=complement_appentry(wkp,appnp);
+
+  sentry = sentry.replace( "anci.passwd=''" , `anci.passwd='${passwd}'`);
+
+  var stlocurl = req.query.storage_location_url;
+
+  if(stlocurl)
+  {
+    var tindex2=sui.indexOf("</text"+"area>",tindex);
+    tindex=sui.indexOf("\">",tindex)+2;
+    sui=sui.substr(0,tindex)+stlocurl+sui.substr(tindex2);
+  }
+
+  res.end(
             sentry + hh + hh +
-            "<scr"+"ipt>" + hh +
-            spasswd + hh + hh +
+            "<scr"+"ipt>" + hh + hh +
             s_code + hh + hh +
             "</scr"+"ipt>" + hh + hh +
-            "<body>" + sdefbox + sui + hh + hh +
+            "<body>" + hh + hh + sdefbox + hh + hh +
+            sui + hh + hh +
             "</body>" + hh +
             "</html>"
           );
 
 }catch(e){res.end(util.inspect(e));}
 
-}
+}  //  end of gen_app_html
 
 
 
@@ -576,28 +634,36 @@ async function lsr(dir) {
 
 
 function objls(obj)
+{
+  let objO=obj;
+  let listK={};
+  while(obj!=null)
   {
-    let objO=obj;
-    let listK={};
-    while(obj!=null)
+    Object.getOwnPropertyNames(obj).forEach(i=>
     {
-      Object.getOwnPropertyNames(obj).forEach(i=>{
-        listK[i]=1;
-      });
-      obj=obj.__proto__;
-    }
-    let ret=Object.keys(listK);
-    let oname=objO.constructor.name;
-    if(oname=="Number")
-      ret.unshift(objO);
-    else if(oname=="String")
-      ret.unshift(objO.substr(0,1000));
-    else if(oname=="Array")
-      ret.unshift(objO.slice(0,10).join(","));
-
-    ret.unshift(objO.constructor.name);
-    return ret;
+      listK[i]=1;
+    });
+    obj=obj.__proto__;
   }
+  let ret=Object.keys(listK);
+  let oname=objO.constructor && objO.constructor.name;
+  if(oname=="Number" || oname=="Boolean")
+    ret.unshift(objO);
+  else if(oname=="String")
+  {
+    ret = ret.filter( i=> isNaN(i) );
+    ret.unshift(objO.substr(0,1000));
+  }
+  else if(oname=="Array")
+    ret.unshift(objO.slice(0,10).join(","));
+  else if(oname=="Function" || oname=="AsyncFunction")
+    ret.unshift(objO.toString().slice(0,1000))
+  
+  ret.unshift(oname || "No Constructor");
+  return ret;
+}
+
+
 
 function retres(str,res)
 {

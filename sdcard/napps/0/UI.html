@@ -46,7 +46,8 @@ Code
       jstest.value=sind.tarr[t-1];
       sind.innerText=t;" style="">→</button>
 
-<button onclick="alert2(`設定好了一個非同步的環境, 並且物件鏈鎖打開, 可以使用縮寫 jss, jsp, csl
+<button oncontextmenu="anci.update()"
+               onclick="alert2(`設定好了一個非同步的環境, 並且物件鏈鎖打開, 可以使用縮寫 jss, jsp, csl
 有錯誤會跳alert2
 
 Async context set up, object chaining on, jss, jsp, csl are available shorthands
@@ -60,9 +61,9 @@ Errors will be printed by alert2`)">注意 Cautions</button>
   var s="I am very clever, 我很聰明";
   anci.TextToSpeech(s,1,1);
 
-//List the functions of ANCI
-//列出ANCI的函式縮寫
-  await anci.showlist(anci.doca);
+//List the functions of ANCI including help and test codes
+//列出ANCI的函式 包含說明和測試程式碼
+  anci.help()
 
 //  Read file
 //  讀取檔案
@@ -101,6 +102,15 @@ async get / set anci.cb: anci.get/setcb()
 
 <span onclick="anci.ChooseFile().then(anci.OpenFile);" oncontextmenu="alert('Open a file on the server')">
   <i class="far fa-folder-open fa-3x"></i>
+</span>&nbsp;&nbsp;&nbsp;
+
+<span onclick="let btn=$(this);anci.eruda().then(()=>{
+      btn.remove();
+      if( anci.platform=='android' ) 
+        anci.getcslm().then(r=>alert2(r).then(()=>console.log(r)))
+  });" 
+  oncontextmenu="alert('Open eruda console and show console messages')">
+  <i class="fas fa-terminal fa-3x"></i>
 </span>&nbsp;&nbsp;
 
 <br><br>

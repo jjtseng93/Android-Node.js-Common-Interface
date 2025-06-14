@@ -14,35 +14,11 @@ const jss=JSON.stringify;
 const jsp=JSON.parse;
 const hh="\r\n";
 
-dexists=(d)=>
-{
-  d+='';
-  if(!d) return false;
-  if( d.startsWith('content://') )
-  {
-    let fp=d + '/file_for_testing_folder_existence.jpg' ;
-    app.WriteFile( fp , 'A' );
-    if( fexists(fp) )
-    {
-      app.DeleteFile(fp);
-      return true ;
-    }
-    else
-      return false ;
-  }
-  else if( d=='/android_asset' )
-    return true;
-  else
-    return app.FolderExists(d);
- }
-fexists=(f)=>
-{
-  f+='';
-  if(f.startsWith('content://'))
-    return !!app.ReadFile(f) ;
-  else
-    return app.FileExists(f) ;
-}
+var tts_running=null;
+
+var lay,web
+
+var logarr=[];
 
 //  These 2 lines below makes DroidScript register your app to Android's share via menu when in APK 下面這兩行會讓DroidScript把你的APP註冊到安卓系統的分享選單(當你建立APK時)
 //  If your app doesn't want to receive shared data, remove these 2 lines 如果你的APP並不想接收分享的資料, 請移除這兩行
@@ -70,22 +46,24 @@ function OnBack()
 
 function OnConfig()
 {
-      let a,b;
-	  a=app.GetScreenWidth();b=app.GetDisplayHeight();
-	  web.SetPosition(0,0,a,b,"px");
+    let a,b;
+	  a=app.GetScreenWidth();
+	  b=app.GetDisplayHeight();
+	  web.SetPosition( 0, 0, a, b, "px" );
 }
 
 function OnStart()
 {
-	tts_running=null;
+	
 	
 	app.EnableBackKey(false);
 	
 	app.LoadScript("nlib/iconv.js");
 	
     var min=101,max=999
-    rnd=Math.floor(Math.random() * (max - min) + min)
-	window.passwd=rnd+""+Date.now();
+    var rnd=Math.floor(Math.random() * (max - min) + min)
+    
+   	window.passwd=rnd+""+Date.now();
 
     lay = app.CreateLayout( "absolute" );
 
@@ -96,7 +74,7 @@ function OnStart()
     app.AddLayout( lay );
 	
 	
-    web.LoadUrl( `{app_entry}.html?passwd=${window.passwd}` );
+    web.LoadUrl( `{app_entry}.html?passwd=${window.passwd}&platform=android` );
 	
     
     web.SetOnProgress(prog=>
@@ -125,13 +103,15 @@ function OnStart()
         app.ExtractAssets( 'nlib', p+'/nlib' );
         
     }
+    
+    app.GetConsoleMessages = ()=>logarr ;
 
-}
+}  //  onstart
 
 function OnData(isStartup)
 {
-  if(!isStartup)
-    web.Execute("if(typeof OnData=='function') OnData()");
+    web
+    .Execute(`if(typeof OnData=='function') OnData(${isStartup})`);
 }
 
 async function web_OnConsole( consoleMsg )
@@ -160,7 +140,10 @@ async function web_OnConsole( consoleMsg )
     EvaluateAppCommand(obj,"anci.droidscript_resolves['"+obj.func+"']");
   }
   else if(!app.IsAPK())	  
-    alert("Main: " + consoleMsg);
+  {
+    app.ShowPopup("Console: " + consoleMsg);
+    logarr.unshift(consoleMsg);
+  }
 }
 
 function retres(str,func,spread_array)
@@ -298,7 +281,7 @@ function wf(rpath, rtext, rencoding, test_existence)
     app.WriteFile( rpath, rtext, null, "UTF-8" ) ;
     if( ! test_existence ) return 'Tried to write, results unkown:' + hh + rpath ;
     if( fexists( rpath ) )
-      return 'Successfully written to:' + hh + rpath ;
+      return 'Success: Written to' + hh + rpath ;
     else
       return "Failed to write to:" +hh+ rpath ;
   }
@@ -343,7 +326,7 @@ function wfb(rpath, rbyteArray)
        app.DeleteFile( rpath ) ;
        app.WriteFile( rpath, btoa(rbyteArray
               .map(i=>String.fromCharCode(i)).join('')), 'Base64') ;
-       var ret= 'Successfully written to:' + hh + rpath ;
+       var ret= 'Success: Written to' + hh + rpath ;
      }
     else
        var ret = writeallbytes(  rrpath , rbyteArray  );
@@ -384,7 +367,7 @@ function mkdir( rpath )
     if( !dexists( item ) ) return failt + hh + 'Failed at:' + hh + item;
   }
   
-  return "Successfully created:"+hh+rpath ;
+  return "Success: Created"+hh+rpath ;
   
   return;
 }  //  function mkdir
@@ -461,7 +444,7 @@ var simple_functions=["GetClipboardText",
 					  "GetSharedText",
 					  "GetSharedFiles",
 					  "DisableKeys","Exit",
-		              "GetPackageName"
+		              "GetPackageName", "GetConsoleMessages"
 		              ];
 
 try{
@@ -760,23 +743,23 @@ else if(r.cmd==="app.DeleteFile")
 else if(r.cmd==="app.DeleteFolder")
 {
   let failt="Failed to delete:"+hh+r.path+hh;
-  r.path=rrp(r.path);
-  if(r.path=="" || r.path=="/storage/emulated/0")
+  
+  if(rrpath=="" || rrpath=="/storage/emulated/0")
   {
       retres(  failt+"because access was denied" , res  );
       return false;
   }
   
-  if(dexists(r.path))
+  if(dexists(rrpath))
   {
-    if( !confirm( 'Delete folder?:'+hh+r.path) )
+    if( !confirm( 'Delete folder?:'+hh+rrpath) )
     {
       retres(  failt + "because user cancelled it" , res  );
       return; 
     }
-      app.DeleteFolder(r.path);
+      app.DeleteFolder(rrpath);
 
-      retres("Successfully deleted"+hh+r.path,res);
+      retres("Success: Deleted"+hh+rrpath,res);
       return true;
   }
   else
@@ -864,9 +847,12 @@ else if(r.cmd==="app.xhr" || r.cmd=="downloadfile")
   if(r.cmd=="downloadfile")
     fr.then(r=>r.arrayBuffer()).then((result)=>
      {
-       console.log(r.path);
-       wfb((r.path),Array.from(new Uint8Array(result)))
-       retres("Successfully downloaded:"+hh+r.url,res);
+       wfb(  r.path  ,  Array.from( new Uint8Array( result ) )  )
+       if( fexists(rrpath) )
+         retres("Success: downloaded"+hh+
+                   r.url+hh+" to "+hh+r.path , res);
+       else
+         retres("Failed to download"+hh+r.url , res );
      })
     .catch(e=>retres(e.stack,res));
   else
@@ -877,23 +863,24 @@ else if(r.cmd==="app.xhr" || r.cmd=="downloadfile")
      })
     .catch(e=>retres(e.stack,res));
 
-   //xhpost(r.url,r.data,cbf,r.method,"1",r.hhead);
+   
 }
 else
 {
-retres("已處理:" +hh+jss(r),res);
+  retres("Unknown cmd 未知指令:" +hh+jss(r),res);
 }
 
 }catch(e)
   {
    retres(e.stack,res);
   }
-}
+  
+}  //  evaluate command end
 
 
 
 function rrp(istr)
-  {
+{
     try{
     if(istr==null || typeof(istr)!="string") return "";
     istr=istr.replace(/\\/g,"/");
@@ -984,17 +971,22 @@ function rrp(istr)
     {
       alert(e.stack)
     }
-  } // function rrp
+    
+} // function rrp
+  
   
 
 function readallbytes(filen)
 {	
     if(!fexists(filen)) return "Failed reading "+filen;
+    
     var f=app.CreateFile(filen,"r");
     let ii=f.ReadData( f.GetLength(), "int" );
     f.Close();
-	return ii;
+    
+	  return ii;
 }
+
 
 function writeallbytes(filen,barr)
 {
@@ -1008,6 +1000,43 @@ function writeallbytes(filen,barr)
       return "Success: Written to"+hh+filen;
     return "Failed to write to"+hh+filen;
 }
+
+
+function dexists(d)
+{
+  if(!d) return false;
+  d+="" ;
+  
+  if( d.startsWith('content://') )
+  {
+    let fp=d + '/file_for_testing_folder_existence.jpg' ;
+    app.WriteFile( fp , 'A' );
+    if( fexists(fp) )
+    {
+      app.DeleteFile(fp);
+      return true ;
+    }
+    else
+      return false ;
+  }
+  else if( d=='/android_asset' )
+    return true;
+  else
+    return app.FolderExists(d);
+ }  //  dexists
+ 
+ 
+function fexists(f)
+{
+  if(!f) return false;
+  f+='';
+  
+  if(f.startsWith('content://'))
+    return !!app.ReadFile(f) ;
+  else
+    return app.FileExists(f) ;
+}
+
 
 
 
