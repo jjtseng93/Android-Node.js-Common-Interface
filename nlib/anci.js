@@ -37,6 +37,20 @@ anci._absorb=(func,falias)=>{
 }
 
 
+anci._findfile = async (filen)=>
+{
+  filen = (filen || "") + "" ;
+  let tarr = [ "./"  , "./nlib/" , "../../nlib/" , "../../../nlib/" ] ;
+  for( let i of tarr )
+  {
+    let fullp = i + filen ;
+    if( await anci.hasurl( fullp ) )
+      return fullp ;
+  }
+  return "" ;
+}
+
+
 function ge(elementID){return document.getElementById(elementID);}
 
 const tic = "`" ;
@@ -2102,11 +2116,40 @@ if( InBrowser )  //  in a browser environment
   await anci.waitv(document,'body');
   await anci.waitv(window,'jQuery');
 
+
   if(window.theme_from_app_entry && !location.pathname.endsWith("/main.app"))
   {
     await anci.waitv(anci,"ui_resolve");
     await anci.ui_resolve;
   }
+  else
+  {
+  
+  let f = await anci._findfile('css/bootstrap.min.css')
+  
+  if( f )
+  $('<link>')
+  .attr({
+    rel: 'stylesheet',
+    type: 'text/css',
+    href: f
+  })
+  .appendTo('head');
+  
+  
+  f = await anci._findfile('css/font_awesome.min.css') ;
+  
+  if( f )
+  $('<link>')
+  .attr({
+    rel: 'stylesheet',
+    type: 'text/css',
+    href: f
+  })
+  .appendTo('head');
+  
+  }  //  else not loaded from app_entry
+  
 
   if(typeof(OnStop)=="function")
     window.onbeforeunload=OnStop;
@@ -2270,7 +2313,7 @@ if(anci.platform == "web" ||
 { //  File system operations
 
 
-anci.BrowserDownloadFile=(b64_or_arr,file_name="downloaded.txt")=>
+anci.BrowserDownloadFile=async (b64_or_arr,file_name="downloaded.txt")=>
 {
   if(typeof(b64_or_arr)=="string" || b64_or_arr?.[0]?.length>0)
     var barr=new Uint8Array(anci.b64arr(b64_or_arr+""));
@@ -2278,7 +2321,15 @@ anci.BrowserDownloadFile=(b64_or_arr,file_name="downloaded.txt")=>
     var barr=new Uint8Array(b64_or_arr);
 
   var blob=new Blob([barr],{type:"application/octet-stream"});
-  saveAs(blob,file_name);
+  if( ! globalThis.saveAs )
+  {
+    let f = await anci._findfile( "saveAs.js" ) ;
+    if( !f ) return "Failed: No saveAs.js found";
+    
+    await $.getScript(f);
+  }
+  
+  return saveAs(blob,file_name);
 }
 
 anci.bdlf=anci.BrowserDownloadFile;
