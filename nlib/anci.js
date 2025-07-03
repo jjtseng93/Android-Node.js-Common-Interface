@@ -1305,10 +1305,24 @@ async function ObjectBrowser(rootObj)
 
         let children=anci.objls(prop);
         children=children.map(i=>(`<span data-path="${res}[decodeURIComponent(`+"`"+eu(i)+"`"+`)]">${anci.ttoh(i)}</span>`));
+        
+        if( typeof(prop) =="function" )
+          children.unshift( `     <span 
+              data-path="alert2(${res}())">
+              執行 Run function</span>` )
+        
         children.unshift(`<span data-path="${prt(res)}">上一層 Parent</span>`);
 
         reso=await anci.showlist(res,children,true);
-        res=$(reso.toString()).data("path");
+        
+        let temps = $(reso.toString()).data("path");
+        if(!temps) return;
+        if( typeof(prop) =="function" && 
+             temps.startsWith('alert') )
+          await eval(temps)
+        else 
+          res = temps ;
+          
         if(!res) return;
         //console.log(res)
         prop=eval(res);
@@ -2310,10 +2324,10 @@ if(anci.platform == "web" ||
   nodeapi=anci.nodeapi;
 
 
-{ //  File system operations
+// #region  {  File system operations
 
 
-anci.BrowserDownloadFile=async (b64_or_arr,file_name="downloaded.txt")=>
+async function BrowserDownloadFile(b64_or_arr, file_name="downloaded.txt")
 {
   if(typeof(b64_or_arr)=="string" || b64_or_arr?.[0]?.length>0)
     var barr=new Uint8Array(anci.b64arr(b64_or_arr+""));
@@ -2332,19 +2346,21 @@ anci.BrowserDownloadFile=async (b64_or_arr,file_name="downloaded.txt")=>
   return saveAs(blob,file_name);
 }
 
-anci.bdlf=anci.BrowserDownloadFile;
+var bdlf = BrowserDownloadFile ;
+anci._absorb( bdlf , "bdlf" )
 
 
-}  //  File system operations End
+// #endregion  }  File system operations End
 
 
-anci.GetClipboardText=async function()
+async function GetClipboardText()
 {
-var s=await navigator.clipboard.readText();
-return s;
-};
+  var s=await navigator.clipboard.readText();
+  return s;
+}
 
-anci.getcb=anci.GetClipboardText;
+var getcb = GetClipboardText ;
+anci._absorb( getcb , "getcb" ) ;
 
 Object.defineProperty(anci,"cb",{set:anci.setcb,get:anci.getcb,configurable:true});
 
@@ -2551,7 +2567,7 @@ if(anci.platform == "android" || InNodeRuntime)
   // #region  {  ds File system operations
 
 
-let BrowserDownloadFile=async function(b64_or_arr,file_name="downloaded.txt")
+var bdlf = async function BrowserDownloadFile(b64_or_arr,file_name="downloaded.txt")
     {
       if(typeof(b64_or_arr)=="string" || b64_or_arr?.[0]?.length>0)
         var barr = Array
@@ -2575,7 +2591,7 @@ let BrowserDownloadFile=async function(b64_or_arr,file_name="downloaded.txt")
       return await anci.wfb(fullp,barr);
     }
 
-anci._absorb( BrowserDownloadFile , "bdlf" ) ;
+anci._absorb( bdlf , "bdlf" ) ;
 
 
 var openf = async function OpenFile(filepath, mime,

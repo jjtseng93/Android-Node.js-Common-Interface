@@ -1,1 +1,8 @@
 hello
+
+var  =  ;
+anci._absorb(  , "" ) ;
+
+// #region  {
+
+// #endregion  }
